@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DEMO_ROLE_KEY } from "@/lib/erp";
+import { STORE_HERO_IMAGE, STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
@@ -117,11 +118,25 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-slate-100">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
-        <div className="text-center">
-          <div className="text-5xl">🛒</div>
-          <h1 className="mt-4 text-3xl font-bold text-sky-400">ERP Supermercado</h1>
+    <main className="flex min-h-screen items-center justify-center bg-[#0e1612] p-6 text-slate-100">
+      <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border border-emerald-900 bg-slate-900 shadow-2xl md:grid-cols-2">
+        <div className="relative hidden min-h-[280px] md:block">
+          <img
+            src={STORE_HERO_IMAGE}
+            alt={STORE_NAME}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-emerald-950/45" />
+          <p className="absolute bottom-6 left-6 right-6 text-lg font-semibold text-amber-100">
+            {STORE_NAME}
+            <span className="mt-1 block text-sm font-normal text-emerald-100">
+              {STORE_TAGLINE}
+            </span>
+          </p>
+        </div>
+        <div className="p-8">
+        <div className="text-center md:text-left">
+          <h1 className="text-3xl font-bold text-amber-200">{STORE_NAME}</h1>
           <p className="mt-2 text-slate-400">Inicia sesión para entrar al sistema</p>
         </div>
 
@@ -165,7 +180,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-sky-600 p-3 font-bold hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-emerald-800 p-3 font-bold text-amber-50 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Ingresando..." : "Iniciar sesión"}
           </button>
@@ -173,8 +188,8 @@ export default function LoginPage() {
 
         <div className="mt-6 space-y-3 border-t border-slate-800 pt-5 text-sm text-slate-400">
           <p>
-            Revisión: entra sin cuenta. El cajero solo cobra y consulta inventario;
-            el administrador ve finanzas, usuarios y el buzón.
+            Revisión: elige con qué perfil quieres entrar. El cajero cobra y consulta inventario.
+            El administrador ve finanzas, da de alta usuarios y productos.
           </p>
           <button
             type="button"
@@ -196,6 +211,7 @@ export default function LoginPage() {
           >
             Entrar como Cajero
           </button>
+        </div>
         </div>
       </div>
     </main>

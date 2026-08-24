@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { isAdmin, isCashier, type ErpProfile } from "@/lib/erp";
+import { STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
 
 const LINKS = [
   { href: "/", label: "Panel" },
@@ -36,11 +37,14 @@ export function AppHeader({ profile }: { profile: ErpProfile }) {
       : LINKS.filter((link) => link.href !== "/finance/expenses");
 
   return (
-    <header className="mb-6 flex flex-col gap-4 border-b border-slate-800 pb-5">
+    <header className="mb-6 flex flex-col gap-4 border-b border-emerald-900/80 pb-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-sky-400">ERP Supermercado</p>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm font-semibold tracking-wide text-amber-300">
+            {STORE_NAME}
+          </p>
+          <p className="text-xs text-emerald-200/80">{STORE_TAGLINE}</p>
+          <p className="mt-1 text-sm text-slate-400">
             {profile.name} · {profile.role}
           </p>
         </div>
@@ -68,8 +72,8 @@ export function AppHeader({ profile }: { profile: ErpProfile }) {
               href={link.href}
               className={`rounded-lg px-3 py-2 text-sm font-medium ${
                 active
-                  ? "bg-sky-700 text-white"
-                  : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                  ? "bg-emerald-800 text-amber-100"
+                  : "bg-slate-800 text-slate-200 hover:bg-emerald-950"
               }`}
             >
               {link.label}

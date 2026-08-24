@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
 import { isAdmin, money } from "@/lib/erp";
+import { STORE_HERO_IMAGE, STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
 import { createClient } from "@/utils/supabase/client";
 
 type Product = {
@@ -131,11 +132,23 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-6xl">
         <AppHeader profile={profile} />
 
-        <h1 className="text-3xl font-bold text-sky-400">Panel de control</h1>
-        <p className="mt-2 text-slate-400">
-          ERP integral: punto de venta, inventarios, finanzas y agente de IA
-          (demo WhatsApp en el navegador).
-        </p>
+        <section className="overflow-hidden rounded-2xl border border-emerald-900">
+          <div className="relative h-48 w-full md:h-56">
+            <img
+              src={STORE_HERO_IMAGE}
+              alt={`Pasillo de ${STORE_NAME}`}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-950/35 to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+                {STORE_NAME}
+              </p>
+              <h1 className="mt-1 text-3xl font-bold text-white">Panel de control</h1>
+              <p className="mt-1 text-sm text-emerald-100">{STORE_TAGLINE}</p>
+            </div>
+          </div>
+        </section>
 
         {errorMessage && (
           <div className="mt-5 rounded-lg border border-red-800 bg-red-950 p-4 text-red-300">

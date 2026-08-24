@@ -14,9 +14,13 @@ export function useErpSession(options?: { adminOnly?: boolean }) {
     async function loadSession() {
       try {
         const supabase = createClient();
+        const userWait = supabase.auth.getUser();
+        const userTimeout = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("sesión lenta")), 8000);
+        });
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+        } = await Promise.race([userWait, userTimeout]);
 
         if (user?.email) {
           const { data, error } = await supabase

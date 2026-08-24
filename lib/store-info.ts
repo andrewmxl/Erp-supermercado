@@ -1,3 +1,8 @@
+export const STORE_NAME = "Mercado La Estrella";
+export const STORE_TAGLINE = "Abarrotes, fresco y despensa · Mexicali";
+export const STORE_HERO_IMAGE =
+  "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=1600&q=80";
+
 export const CHARITY_NAME = "Comedor Comunitario Mexicali";
 
 export const PAYMENT_OPTIONS = [

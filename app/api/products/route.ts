@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createDataClient } from "@/utils/supabase/data";
+
 export async function GET() {
   try {
     const supabase = createDataClient();
@@ -10,13 +11,17 @@ export async function GET() {
       )
       .order("name")
       .limit(200);
+
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error("timeout")), 8000);
     });
+
     const { data, error } = await Promise.race([query, timeout]);
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
     return NextResponse.json({ products: data ?? [] });
   } catch (error) {
     const message =
