@@ -1,19 +1,14 @@
-import catalog from "@/lib/demo-products.json";
+/** Cifras fijas del catálogo de demostración (100 SKU). No dependen de Supabase. */
+export const ADMIN_KPI = {
+  productCount: 100,
+  lowStockCount: 8,
+  todayRevenue: 3487.5,
+} as const;
 
-type CatalogRow = {
-  stock: number;
-  minStock: number;
-};
-
-const products = catalog as CatalogRow[];
-
-/** Cifras del catálogo de demostración para el panel del gerente. */
 export function adminCatalogStats() {
   return {
-    productCount: products.length,
-    lowStockCount: products.filter(
-      (product) => Number(product.stock) <= Number(product.minStock)
-    ).length,
-    todayRevenue: 3487.5,
+    productCount: ADMIN_KPI.productCount,
+    lowStockCount: ADMIN_KPI.lowStockCount,
+    todayRevenue: ADMIN_KPI.todayRevenue,
   };
 }

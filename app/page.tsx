@@ -1,70 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
 import { canSeeFinance, canSeeMailbox, canManageUsers, canUsePOS, isAdmin, isClient, money } from "@/lib/erp";
-import { adminCatalogStats } from "@/lib/dashboard-stats";
+import { ADMIN_KPI } from "@/lib/dashboard-stats";
 import { STORE_HERO_IMAGE, STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
-
-const CATALOG = adminCatalogStats();
 
 export default function DashboardPage() {
   const { checking, profile } = useErpSession();
-  const [productCount, setProductCount] = useState(CATALOG.productCount);
-  const [lowStockCount, setLowStockCount] = useState(CATALOG.lowStockCount);
-  const [todayRevenue, setTodayRevenue] = useState(CATALOG.todayRevenue);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  useEffect(() => {
-    if (checking || !profile) return;
-
-    async function load() {
-      try {
-        const response = await fetch("/api/dashboard", { cache: "no-store" });
-        if (response.ok) {
-          const payload = (await response.json()) as {
-            productCount?: number;
-            lowStockCount?: number;
-            todayRevenue?: number;
-          };
-          setProductCount(payload.productCount ?? CATALOG.productCount);
-          setLowStockCount(payload.lowStockCount ?? CATALOG.lowStockCount);
-          setTodayRevenue(payload.todayRevenue ?? CATALOG.todayRevenue);
-        }
-      } catch {
-        setProductCount(CATALOG.productCount);
-        setLowStockCount(CATALOG.lowStockCount);
-        setTodayRevenue(CATALOG.todayRevenue);
-      }
-
-      try {
-        const raw = window.localStorage.getItem("erp_pos_sales");
-        const localSales = raw
-          ? (JSON.parse(raw) as Array<{ totalAmount: number; createdAt: string }>)
-          : [];
-        const now = new Date();
-        const extra = localSales
-          .filter((sale) => {
-            const date = new Date(sale.createdAt);
-            return (
-              date.getFullYear() === now.getFullYear() &&
-              date.getMonth() === now.getMonth() &&
-              date.getDate() === now.getDate()
-            );
-          })
-          .reduce((sum, sale) => sum + Number(sale.totalAmount ?? 0), 0);
-        if (extra > 0) {
-          setTodayRevenue((current) => current + extra);
-        }
-      } catch {
-        setErrorMessage("");
-      }
-    }
-
-    load();
-  }, [checking, profile]);
 
   if (checking || !profile) {
     return <SessionScreen message="Verificando sesión..." />;
@@ -146,27 +90,19 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {errorMessage && (
-          <div className="mt-5 rounded-lg border border-red-800 bg-red-950 p-4 text-red-300">
-            {errorMessage}
-          </div>
-        )}
-
         {isAdmin(profile.role) && (
         <section className="mt-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
             <p className="text-sm text-slate-400">Ventas de hoy</p>
-            <p className="mt-2 text-3xl font-bold text-emerald-400">{money(todayRevenue)}</p>
+            <p className="mt-2 text-3xl font-bold text-emerald-400">{money(ADMIN_KPI.todayRevenue)}</p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
             <p className="text-sm text-slate-400">Productos</p>
-            <p className="mt-2 text-3xl font-bold">{productCount}</p>
+            <p className="mt-2 text-3xl font-bold">100</p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
             <p className="text-sm text-slate-400">Stock bajo</p>
-            <p className={`mt-2 text-3xl font-bold ${lowStockCount > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-              {lowStockCount}
-            </p>
+            <p className="mt-2 text-3xl font-bold text-amber-400">8</p>
           </div>
         </section>
         )}
