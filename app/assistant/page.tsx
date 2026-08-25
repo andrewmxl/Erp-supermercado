@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
+import { useErpSession } from "@/hooks/useErpSession";
 import { canAskBusinessData, STAFF_ROLES } from "@/lib/erp";
 
 type ChatMessage = {
