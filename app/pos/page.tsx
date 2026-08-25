@@ -18,7 +18,6 @@ import {
   type ShippingId,
 } from "@/lib/store-info";
 import { canUsePOS } from "@/lib/erp";
-import { createClient } from "@/utils/supabase/client";
 
 type Product = {
   id: string;
@@ -513,7 +512,6 @@ export default function PosPage() {
     const soldDonation = donationAmount;
     const soldTip = tipAmount;
     const soldTotal = grandTotal;
-    const soldCash = cashNumber;
     const soldChange = change;
     const soldPayment =
       PAYMENT_OPTIONS.find((option) => option.id === paymentMethod)?.label ??
@@ -528,51 +526,16 @@ export default function PosPage() {
         : "Cupón de lealtad";
 
     try {
-      const supabase = createClient();
-      const persist = (async () => {
-        const { error: saleError } = await supabase.from("Sale").insert({
-          id: saleId,
-          cashRegister: 1,
-          totalAmount: soldTotal,
-          userId: profile.id,
-          createdAt,
-        });
-        if (saleError) throw saleError;
-
-        const { error: itemsError } = await supabase.from("SaleItem").insert(
-          soldCart.map((item) => ({
-            id: crypto.randomUUID(),
-            saleId,
-            productId: item.id,
-            quantity: item.quantity,
-            price: Number(item.price.toFixed(2)),
-          }))
-        );
-        if (itemsError) throw itemsError;
-
-        for (const item of soldCart) {
-          const newStock = Number((item.stock - item.quantity).toFixed(3));
-          if (newStock < 0) continue;
-          await supabase.from("Product").update({ stock: newStock }).eq("id", item.id);
-          await supabase.from("InventoryMovement").insert({
-            id: crypto.randomUUID(),
-            productId: item.id,
-            type: "OUT",
-            quantity: item.quantity,
-            reason: `Venta ${saleId}`,
-            createdAt,
-          });
-        }
-      })();
-
-      await Promise.race([
-        persist,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), 8000)
-        ),
-      ]);
+      const raw = window.localStorage.getItem("erp_pos_sales");
+      const previous = raw ? (JSON.parse(raw) as Array<{ totalAmount: number; createdAt: string }>) : [];
+      window.localStorage.setItem(
+        "erp_pos_sales",
+        JSON.stringify(
+          [{ totalAmount: soldTotal, createdAt }, ...previous].slice(0, 200)
+        )
+      );
     } catch {
-      // La caja no se bloquea si Supabase no responde: el ticket se emite igual.
+      // El ticket se emite igual si el almacenamiento local falla.
     }
 
     setProducts((current) =>

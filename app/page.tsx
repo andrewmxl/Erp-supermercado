@@ -6,7 +6,6 @@ import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
 import { canSeeFinance, canSeeMailbox, canManageUsers, canUsePOS, isClient, money } from "@/lib/erp";
 import { STORE_HERO_IMAGE, STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
-import { createClient } from "@/utils/supabase/client";
 
 type Product = {
   stock: number;
@@ -29,33 +28,39 @@ export default function DashboardPage() {
     if (checking || !profile) return;
 
     async function load() {
-      const supabase = createClient();
-      const [{ data: products, error: productError }, { data: salesData, error: salesError }] =
-        await Promise.all([
-          supabase.from("Product").select("stock, minStock"),
-          supabase.from("Sale").select("totalAmount, createdAt"),
-        ]);
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 10000);
 
-      if (productError) {
-        setErrorMessage(productError.message);
-        return;
-      }
-      if (salesError) {
-        setErrorMessage(salesError.message);
-        return;
+      try {
+        const response = await fetch("/api/products", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const payload = (await response.json()) as {
+          products?: Array<{ stock?: number; minStock?: number }>;
+        };
+        const mapped = (payload.products ?? []) as Product[];
+        setProductCount(mapped.length);
+        setLowStockCount(
+          mapped.filter(
+            (product) => Number(product.stock) <= Number(product.minStock)
+          ).length
+        );
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error ? error.message : "No se pudo leer el inventario."
+        );
+      } finally {
+        window.clearTimeout(timer);
       }
 
-      const mapped = (products ?? []) as Product[];
-      setProductCount(mapped.length);
-      setLowStockCount(
-        mapped.filter((product) => Number(product.stock) <= Number(product.minStock)).length
-      );
-      setSales(
-        (salesData ?? []).map((sale) => ({
-          totalAmount: Number(sale.totalAmount ?? 0),
-          createdAt: sale.createdAt ?? "",
-        }))
-      );
+      try {
+        const raw = window.localStorage.getItem("erp_pos_sales");
+        const localSales = raw ? (JSON.parse(raw) as Sale[]) : [];
+        setSales(localSales);
+      } catch {
+        setSales([]);
+      }
     }
 
     load();

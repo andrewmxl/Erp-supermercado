@@ -95,6 +95,23 @@ function fold(value: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+function hueFrom(value: string) {
+  let hash = 0;
+  for (const char of value) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  return hash % 360;
+}
+
+export function uniquePhoto(name: string, sku = "") {
+  const hue = hueFrom(`${sku}|${name}`);
+  const hue2 = (hue + 48) % 360;
+  const label = name.replace(/[<>&]/g, "").slice(0, 32);
+  const skuLabel = (sku || "CATALOGO").replace(/[<>&]/g, "");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="700" height="480" viewBox="0 0 700 480"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${hue},48%,24%)"/><stop offset="100%" stop-color="hsl(${hue2},42%,12%)"/></linearGradient></defs><rect width="700" height="480" fill="url(#g)"/><text x="350" y="210" text-anchor="middle" fill="#f4efe6" font-size="30" font-family="Arial" font-weight="700">${label}</text><text x="350" y="255" text-anchor="middle" fill="#d4c4a8" font-size="18" font-family="Arial">${skuLabel}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 const KEYWORDS: Array<[string, string]> = [
   ["alimento para gato", PHOTO.catFood],
   ["croquetas para gato", PHOTO.catFood],
@@ -219,8 +236,8 @@ const KEYWORDS: Array<[string, string]> = [
   ["pizza", PHOTO.pizza],
 ];
 
-export function placeholderPhoto(name: string) {
-  return `https://placehold.co/640x480/1e3d32/f4efe6/png?text=${encodeURIComponent(name.slice(0, 22))}`;
+export function placeholderPhoto(name: string, sku = "") {
+  return uniquePhoto(name, sku);
 }
 
 const EXACT: Record<string, string> = {
@@ -358,20 +375,7 @@ const SKU_PHOTO: Record<string, string> = {
 };
 
 export function photoForProduct(name: string, category = "", sku = "") {
-  if (sku && SKU_PHOTO[sku]) {
-    return SKU_PHOTO[sku];
-  }
-  const foldedName = fold(name);
-  if (EXACT[foldedName]) {
-    return EXACT[foldedName];
-  }
-  const sorted = [...KEYWORDS].sort((a, b) => b[0].length - a[0].length);
-  for (const [keyword, url] of sorted) {
-    if (foldedName.includes(fold(keyword))) {
-      return url;
-    }
-  }
-  return placeholderPhoto(`${sku || name}`);
+  return uniquePhoto(name, sku || fold(category));
 }
 
 export function displayPhoto(

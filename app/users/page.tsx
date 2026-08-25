@@ -29,12 +29,11 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [newRole, setNewRole] = useState<(typeof STAFF_ROLES)[number]>("Cajero");
+  const [newRole, setNewRole] = useState("Cajero");
   const currentUserEmail = profile?.email ?? "";
 
   function demoUsers(): AppUser[] {
@@ -246,7 +245,6 @@ export default function UsersPage() {
       setNewEmail("");
       setNewPhone("");
       setNewRole("Cajero");
-      setShowAddForm(false);
       setSuccessMessage(
         payload.warning
           ? `"${name}" se agregó en esta sesión. ${payload.warning}`
@@ -266,7 +264,6 @@ export default function UsersPage() {
       setNewName("");
       setNewEmail("");
       setNewPhone("");
-      setShowAddForm(false);
       setSuccessMessage(
         `"${name}" se agregó en esta sesión (el servidor no respondió).`
       );
@@ -288,6 +285,54 @@ export default function UsersPage() {
       <div className="mx-auto max-w-6xl">
       <AppHeader profile={profile} />
       <h1 className="mb-6 text-3xl font-bold text-sky-400">Usuarios y roles</h1>
+
+      <section className="mb-6 rounded-xl border-2 border-emerald-500 bg-slate-900 p-5">
+        <h2 className="text-2xl font-bold text-emerald-300">Agregar persona al sistema</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Completa nombre, correo, teléfono y puesto (empleado o cliente).
+        </p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <input
+            value={newName}
+            onChange={(event) => setNewName(event.target.value)}
+            placeholder="Nombre completo *"
+            className="rounded-lg border border-slate-700 bg-slate-950 p-3 outline-none focus:border-sky-500"
+          />
+          <input
+            type="email"
+            value={newEmail}
+            onChange={(event) => setNewEmail(event.target.value)}
+            placeholder="Correo *"
+            className="rounded-lg border border-slate-700 bg-slate-950 p-3 outline-none focus:border-sky-500"
+          />
+          <input
+            value={newPhone}
+            onChange={(event) => setNewPhone(event.target.value)}
+            placeholder="Teléfono *"
+            className="rounded-lg border border-slate-700 bg-slate-950 p-3 outline-none focus:border-sky-500"
+          />
+          <select
+            value={newRole}
+            onChange={(event) => setNewRole(event.target.value)}
+            className="rounded-lg border border-slate-700 bg-slate-950 p-3 outline-none focus:border-sky-500"
+          >
+            {STAFF_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+            <option value="Cliente">Cliente</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => void addUser()}
+            disabled={creating}
+            className="rounded-lg bg-emerald-600 px-4 py-3 text-lg font-bold text-white hover:bg-emerald-500 disabled:opacity-40 md:col-span-2"
+          >
+            {creating ? "Guardando..." : "Agregar al sistema"}
+          </button>
+        </div>
+      </section>
 
       {successMessage && (
         <div className="mb-5 rounded-lg border border-emerald-800 bg-emerald-950 p-4 text-emerald-300">
@@ -335,13 +380,6 @@ export default function UsersPage() {
             />
             <button
               type="button"
-              onClick={() => setShowAddForm((open) => !open)}
-              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold hover:bg-emerald-600"
-            >
-              {showAddForm ? "Cerrar" : "Agregar usuario"}
-            </button>
-            <button
-              type="button"
               onClick={loadUsers}
               disabled={loading || Boolean(savingId)}
               className="rounded-lg bg-slate-700 px-4 py-2 hover:bg-slate-600 disabled:opacity-40"
@@ -350,51 +388,6 @@ export default function UsersPage() {
             </button>
           </div>
         </div>
-
-        {showAddForm && (
-          <div className="mb-6 grid gap-3 rounded-xl border border-emerald-900 bg-slate-950 p-4 md:grid-cols-2">
-            <input
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
-              placeholder="Nombre completo *"
-              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
-            />
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(event) => setNewEmail(event.target.value)}
-              placeholder="Correo *"
-              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
-            />
-            <input
-              value={newPhone}
-              onChange={(event) => setNewPhone(event.target.value)}
-              placeholder="Teléfono *"
-              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
-            />
-            <select
-              value={newRole}
-              onChange={(event) =>
-                setNewRole(event.target.value as (typeof STAFF_ROLES)[number])
-              }
-              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
-            >
-              {STAFF_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => void addUser()}
-              disabled={creating}
-              className="rounded-lg bg-emerald-700 px-4 py-3 font-semibold hover:bg-emerald-600 disabled:opacity-40 md:col-span-2"
-            >
-              {creating ? "Guardando..." : "Guardar usuario"}
-            </button>
-          </div>
-        )}
 
         {loading ? (
           <div className="p-10 text-center text-slate-400">Cargando usuarios...</div>
@@ -442,6 +435,7 @@ export default function UsersPage() {
                           className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-sky-500 disabled:opacity-50"
                         >
                           <option value="Administrador">Administrador</option>
+                          <option value="Cliente">Cliente</option>
                           {STAFF_ROLES.map((role) => (
                             <option key={role} value={role}>
                               {role}
