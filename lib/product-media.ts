@@ -389,6 +389,96 @@ export function photoForProduct(name: string, category = "", sku = "") {
   return `/api/product-photo?${params.toString()}`;
 }
 
+export function productIcon(name: string, sku = "", category = "") {
+  const key = `${sku} ${name} ${category}`.toLowerCase();
+  const folded = fold(key);
+  const icons: Array<[string, string]> = [
+    ["lac-001", "🥛"],
+    ["lac-002", "🥛"],
+    ["lac-003", "🥛"],
+    ["lac-010", "🍓"],
+    ["huevo", "🥚"],
+    ["leche", "🥛"],
+    ["yogur", "🥛"],
+    ["queso", "🧀"],
+    ["mantequilla", "🧈"],
+    ["crema", "🥛"],
+    ["arroz", "🍚"],
+    ["frijol", "🫘"],
+    ["azucar", "🍬"],
+    ["aceite", "🫒"],
+    ["cafe", "☕"],
+    ["tortilla", "🫓"],
+    ["pan", "🍞"],
+    ["agua", "💧"],
+    ["refresco", "🥤"],
+    ["jugo", "🧃"],
+    ["nectar", "🧃"],
+    ["cerveza", "🍺"],
+    ["manzana", "🍎"],
+    ["platano", "🍌"],
+    ["tomate", "🍅"],
+    ["cebolla", "🧅"],
+    ["papa", "🥔"],
+    ["aguacate", "🥑"],
+    ["naranja", "🍊"],
+    ["limon", "🍋"],
+    ["zanahoria", "🥕"],
+    ["chile", "🌶️"],
+    ["pepino", "🥒"],
+    ["uva", "🍇"],
+    ["pera", "🍐"],
+    ["sandia", "🍉"],
+    ["melon", "🍈"],
+    ["mango", "🥭"],
+    ["lechuga", "🥬"],
+    ["brocoli", "🥦"],
+    ["ajo", "🧄"],
+    ["pollo", "🍗"],
+    ["res", "🥩"],
+    ["cerdo", "🥩"],
+    ["pescado", "🐟"],
+    ["tilapia", "🐟"],
+    ["jamon", "🥓"],
+    ["salchicha", "🌭"],
+    ["chorizo", "🌭"],
+    ["atun", "🐟"],
+    ["pasta", "🍝"],
+    ["harina", "🌾"],
+    ["sal ", "🧂"],
+    ["mayonesa", "🫙"],
+    ["catsup", "🍅"],
+    ["cereal", "🥣"],
+    ["galleta", "🍪"],
+    ["chocolate", "🍫"],
+    ["helado", "🍦"],
+    ["pizza", "🍕"],
+    ["detergente", "🧴"],
+    ["cloro", "🧴"],
+    ["jabon", "🧼"],
+    ["shampoo", "🧴"],
+    ["papel", "🧻"],
+    ["pasta dental", "🦷"],
+    ["pañal", "🧷"],
+    ["panal", "🧷"],
+    ["gato", "🐱"],
+    ["perro", "🐶"],
+    ["te negro", "🍵"],
+    ["miel", "🍯"],
+    ["bolsa", "🛍️"],
+    ["servilleta", "🧻"],
+  ];
+  for (const [needle, icon] of icons) {
+    if (folded.includes(fold(needle))) {
+      return icon;
+    }
+  }
+  if (folded.includes("fruta") || folded.includes("verdura")) return "🥬";
+  if (folded.includes("limp")) return "🧴";
+  if (folded.includes("lact")) return "🥛";
+  return "🛒";
+}
+
 export function displayPhoto(
   name: string,
   category: string,

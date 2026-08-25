@@ -1,6 +1,6 @@
 "use client";
 
-import { barcodeSrc, photoForProduct, productSwatch } from "@/lib/product-media";
+import { barcodeSrc, productIcon, productSwatch } from "@/lib/product-media";
 
 export function ProductShot({
   name,
@@ -17,34 +17,36 @@ export function ProductShot({
   sku?: string;
   compact?: boolean;
 }) {
-  const swatch = productSwatch(name, sku || category);
   const uploaded = Boolean(
     imageUrl &&
       (imageUrl.includes("supabase.co/storage") || imageUrl.startsWith("blob:"))
   );
-  const src = uploaded ? imageUrl : photoForProduct(name, category, sku);
+  const icon = productIcon(name, sku, category);
+  const swatch = productSwatch(name, sku || category);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-amber-800/50 bg-slate-950">
+    <div className="overflow-hidden rounded-xl border border-slate-300 bg-white">
       <div
-        className={`relative ${compact ? "h-16 w-16" : "h-44 w-full"}`}
-        style={{ background: swatch.background }}
+        className={`flex flex-col items-center justify-center px-2 ${compact ? "h-20 w-20" : "min-h-44 w-full py-4"}`}
+        style={{ background: uploaded ? "#fff" : swatch.background }}
       >
-        <img
-          src={src}
-          alt={name}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-x-0 bottom-0 bg-black/55 px-2 py-1">
-          <p
-            className={`text-center font-semibold text-white ${compact ? "text-[8px] leading-tight" : "text-sm"}`}
-          >
-            {name}
-          </p>
-        </div>
+        {uploaded ? (
+          <img src={imageUrl} alt={name} className="h-28 w-full object-contain" />
+        ) : (
+          <>
+            <span className={compact ? "text-3xl" : "text-7xl"} aria-hidden>
+              {icon}
+            </span>
+            {!compact ? (
+              <p className="mt-3 max-w-full truncate text-center text-base font-bold text-white drop-shadow">
+                {name}
+              </p>
+            ) : null}
+          </>
+        )}
       </div>
       {barcode ? (
-        <div className="border-t border-slate-800 bg-white px-2 py-2">
+        <div className="border-t border-slate-200 bg-white px-2 py-2">
           <img
             src={barcodeSrc(barcode)}
             alt={`Código de barras ${barcode}`}
