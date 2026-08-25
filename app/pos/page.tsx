@@ -15,6 +15,7 @@ import {
   STORE_RFC,
   TRANSFER_INFO,
   loyaltyForAmount,
+  maskedClabe,
   type PaymentMethod,
   type ShippingId,
 } from "@/lib/store-info";
@@ -161,6 +162,11 @@ export default function PosPage() {
 
   const [cash, setCash] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardHolder, setCardHolder] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [transferConfirmed, setTransferConfirmed] = useState(false);
   const [shippingId, setShippingId] = useState<ShippingId>("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [donationAmount, setDonationAmount] = useState(0);
@@ -538,10 +544,16 @@ export default function PosPage() {
     0
   );
 
+  const cardDigits = cardNumber.replace(/\D/g, "");
+  const cardReady = cardDigits.length >= 13 && cardDigits.length <= 19;
   const paymentReady =
     paymentMethod === "cash"
       ? cashNumber >= payableTotal
-      : true;
+      : paymentMethod === "card"
+        ? cardReady
+        : paymentMethod === "transfer"
+          ? transferConfirmed
+          : true;
 
   const shippingReady =
     shippingId === "pickup" || deliveryAddress.trim().length >= 8;
@@ -573,6 +585,16 @@ export default function PosPage() {
       return;
     }
 
+    if (paymentMethod === "card" && !cardReady) {
+      setErrorMessage("Escribe el número de tarjeta (13 a 19 dígitos). Es solo una prueba.");
+      return;
+    }
+
+    if (paymentMethod === "transfer" && !transferConfirmed) {
+      setErrorMessage("Confirma que ya viste la CLABE y vas a pagar por transferencia.");
+      return;
+    }
+
     setCharging(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -589,8 +611,12 @@ export default function PosPage() {
     const soldTotal = payableTotal;
     const soldChange = change;
     const soldPayment =
-      PAYMENT_OPTIONS.find((option) => option.id === paymentMethod)?.label ??
-      paymentMethod;
+      paymentMethod === "card"
+        ? `Tarjeta **** ${cardDigits.slice(-4)}`
+        : paymentMethod === "transfer"
+          ? `Transferencia SPEI · CLABE ${maskedClabe()}`
+          : PAYMENT_OPTIONS.find((option) => option.id === paymentMethod)?.label ??
+            paymentMethod;
     const soldCoupon = loyalty.coupon || "Sigue comprando para ganar cupones CACHA.";
     const soldGift =
       loyalty.gift ||
@@ -661,6 +687,11 @@ export default function PosPage() {
     setDeliveryAddress("");
     setShippingId("pickup");
     setPaymentMethod("cash");
+    setCardNumber("");
+    setCardHolder("");
+    setCardExpiry("");
+    setCardCvv("");
+    setTransferConfirmed(false);
     setCharging(false);
 
     void loadProducts();
@@ -1291,7 +1322,10 @@ export default function PosPage() {
                     key={option.id}
                     type="button"
                     disabled={charging}
-                    onClick={() => setPaymentMethod(option.id)}
+                    onClick={() => {
+                      setPaymentMethod(option.id);
+                      setTransferConfirmed(false);
+                    }}
                     className={`rounded-lg px-3 py-2 text-sm ${
                       paymentMethod === option.id
                         ? "bg-sky-700"
@@ -1303,13 +1337,88 @@ export default function PosPage() {
                 ))}
               </div>
               {paymentMethod === "transfer" && (
-                <p className="mt-2 text-xs text-slate-400">
-                  {TRANSFER_INFO.bank} · CLABE {TRANSFER_INFO.clabe} · {TRANSFER_INFO.beneficiary}
-                </p>
+                <div className="mt-3 space-y-2 rounded-lg border border-sky-800 bg-slate-950 p-3 text-sm">
+                  <p className="font-semibold text-sky-200">Datos para transferir (demo)</p>
+                  <p className="text-slate-300">{TRANSFER_INFO.bank}</p>
+                  <p className="text-slate-300">{TRANSFER_INFO.beneficiary}</p>
+                  <p className="font-mono text-lg tracking-widest text-amber-200">
+                    CLABE {maskedClabe()}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    En esta prueba la CLABE se muestra oculta. Concepto: {TRANSFER_INFO.concept}.
+                  </p>
+                  <label className="flex items-start gap-2 text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={transferConfirmed}
+                      disabled={charging}
+                      onChange={(event) => setTransferConfirmed(event.target.checked)}
+                      className="mt-1"
+                    />
+                    <span>Ya realicé / confirmo el pago por transferencia. Continuar a cobrar.</span>
+                  </label>
+                </div>
               )}
-              {(paymentMethod === "card" || paymentMethod === "contactless") && (
+              {paymentMethod === "card" && (
+                <div className="mt-3 space-y-2 rounded-lg border border-sky-800 bg-slate-950 p-3">
+                  <p className="text-sm font-semibold text-sky-200">
+                    Datos de tarjeta (solo prueba, no se cobra de verdad)
+                  </p>
+                  <input
+                    value={cardNumber}
+                    disabled={charging}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Número de tarjeta"
+                    onChange={(event) => {
+                      const digits = event.target.value.replace(/\D/g, "").slice(0, 19);
+                      setCardNumber(digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim());
+                    }}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 font-mono"
+                  />
+                  <input
+                    value={cardHolder}
+                    disabled={charging}
+                    autoComplete="off"
+                    placeholder="Nombre en la tarjeta"
+                    onChange={(event) => setCardHolder(event.target.value)}
+                    className="w-full rounded-lg border border-slate-700 bg-slate-900 p-3"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={cardExpiry}
+                      disabled={charging}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="MM/AA"
+                      onChange={(event) => {
+                        const digits = event.target.value.replace(/\D/g, "").slice(0, 4);
+                        setCardExpiry(
+                          digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
+                        );
+                      }}
+                      className="rounded-lg border border-slate-700 bg-slate-900 p-3 font-mono"
+                    />
+                    <input
+                      value={cardCvv}
+                      disabled={charging}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="CVV"
+                      onChange={(event) =>
+                        setCardCvv(event.target.value.replace(/\D/g, "").slice(0, 4))
+                      }
+                      className="rounded-lg border border-slate-700 bg-slate-900 p-3 font-mono"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Escribe al menos 13 dígitos para habilitar Cobrar. El ticket solo guarda **** y los últimos 4.
+                  </p>
+                </div>
+              )}
+              {paymentMethod === "contactless" && (
                 <p className="mt-2 text-xs text-slate-400">
-                  Pasa la tarjeta o acerca el celular. En esta demo el cobro se marca aprobado.
+                  Acerca el celular o la tarjeta. En esta demo el cobro se marca aprobado.
                 </p>
               )}
             </div>

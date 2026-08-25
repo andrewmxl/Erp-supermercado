@@ -53,6 +53,12 @@ export const TRANSFER_INFO = {
   concept: "Venta caja 1",
 };
 
+export function maskedClabe(clabe = TRANSFER_INFO.clabe) {
+  const digits = clabe.replace(/\D/g, "");
+  if (digits.length < 4) return "XXXXXXXXXXXX";
+  return `${"X".repeat(Math.max(12, digits.length - 4))}${digits.slice(-4)}`;
+}
+
 export function shippingCopy() {
   return SHIPPING_OPTIONS.map(
     (option) =>
