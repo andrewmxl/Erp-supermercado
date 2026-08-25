@@ -13,7 +13,7 @@ type ChatMessage = {
 };
 
 const ADMIN_LINKS = [
-  { href: "/", label: "Panel" },
+  { href: "/", label: "Inicio" },
   { href: "/pos", label: "Punto de venta" },
   { href: "/inventory", label: "Inventario" },
   { href: "/finance", label: "Finanzas" },
@@ -190,17 +190,29 @@ export default function AssistantPage() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="flex gap-3 border-t border-slate-800 p-4">
-            <input
+          <form
+            onSubmit={handleSubmit}
+            className="relative z-20 flex gap-3 border-t border-slate-800 bg-slate-900 p-4"
+          >
+            <textarea
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Escribe tu pregunta..."
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-emerald-500"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void sendMessage();
+                }
+              }}
+              placeholder="Escribe tu pregunta... Ejemplo: ¿cuánto cuesta la leche?"
+              rows={3}
+              autoComplete="off"
+              autoFocus
+              className="relative z-20 min-h-[72px] flex-1 resize-y rounded-xl border border-slate-500 bg-slate-950 px-4 py-3 text-base text-white outline-none focus:border-emerald-400"
             />
             <button
               type="submit"
               disabled={!input.trim() || sending}
-              className="rounded-xl bg-emerald-600 px-6 py-3 font-bold disabled:opacity-40"
+              className="self-end rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white disabled:opacity-40"
             >
               Enviar
             </button>

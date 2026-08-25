@@ -66,3 +66,44 @@ export function paymentCopy() {
     `Transferencia: ${TRANSFER_INFO.bank} · CLABE ${TRANSFER_INFO.clabe} · ${TRANSFER_INFO.beneficiary}.`
   );
 }
+
+export const LOYALTY_TIERS = [
+  {
+    min: 500,
+    gift: "Cupón de lealtad",
+    coupon: "CACHA5 · 5% de descuento en tu próxima compra (30 días)",
+    discountRate: 0,
+  },
+  {
+    min: 2500,
+    gift: "Vale de despensa de $80",
+    coupon: "CACHA10 · 10% de descuento en tu próxima compra (30 días)",
+    discountRate: 0,
+  },
+  {
+    min: 10000,
+    gift: "Regalo de despensa de $250 o un detalle de la tienda",
+    coupon: "CACHA15 · 15% extra en tu próxima visita (30 días)",
+    discountRate: 0.05,
+  },
+] as const;
+
+export function loyaltyForAmount(amount: number) {
+  const earned = [...LOYALTY_TIERS].reverse().find((tier) => amount >= tier.min);
+  const next = LOYALTY_TIERS.find((tier) => amount < tier.min);
+  const discount = earned
+    ? Number((amount * earned.discountRate).toFixed(2))
+    : 0;
+
+  return {
+    gift: earned?.gift ?? "",
+    coupon: earned?.coupon ?? "",
+    discount,
+    label: earned
+      ? `Premio por compra de $${earned.min.toLocaleString("es-MX")}+`
+      : "",
+    nextMin: next?.min ?? null,
+    remaining: next ? Number((next.min - amount).toFixed(2)) : 0,
+    nextGift: next ? `${next.gift}. ${next.coupon}` : "",
+  };
+}

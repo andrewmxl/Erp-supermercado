@@ -194,7 +194,7 @@ export function profileForDemoRole(role: string | null): ErpProfile {
 
 export function navLinksForRole(role: string | undefined) {
   const all = [
-    { href: "/", label: "Panel", show: true },
+    { href: "/", label: "Inicio", show: true },
     { href: "/pos", label: isClient(role) ? "Comprar" : "Punto de venta", show: canUsePOS(role) },
     {
       href: "/inventory",

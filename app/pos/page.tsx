@@ -14,6 +14,7 @@ import {
   STORE_PHONE,
   STORE_RFC,
   TRANSFER_INFO,
+  loyaltyForAmount,
   type PaymentMethod,
   type ShippingId,
 } from "@/lib/store-info";
@@ -55,6 +56,7 @@ type SaleReceipt = {
   change: number;
   coupon: string;
   gift: string;
+  discount: number;
 };
 
 function parseQuantity(value: string) {
@@ -113,6 +115,7 @@ function receiptHtml(receipt: SaleReceipt) {
   ${receipt.shipping > 0 ? `<p>Envío: $${receipt.shipping.toFixed(2)}</p>` : ""}
   ${receipt.donation > 0 ? `<p>Donativo: $${receipt.donation.toFixed(2)}</p>` : ""}
   ${receipt.tip > 0 ? `<p>Propina: $${receipt.tip.toFixed(2)}</p>` : ""}
+  ${receipt.discount > 0 ? `<p>Premio ahora: -$${receipt.discount.toFixed(2)}</p>` : ""}
   <p class="total">Total: $${receipt.total.toFixed(2)}</p>
   <p>Pago: ${receipt.payment}</p>
   ${receipt.change > 0 ? `<p>Cambio: $${receipt.change.toFixed(2)}</p>` : ""}
@@ -522,19 +525,21 @@ export default function PosPage() {
   const grandTotal = Number(
     (subtotal + shippingCost + donationAmount + tipAmount).toFixed(2)
   );
+  const loyalty = loyaltyForAmount(subtotal);
+  const payableTotal = Number((grandTotal - loyalty.discount).toFixed(2));
 
   const cashNumber = Number(
     cash.trim().replace(",", ".")
   ) || 0;
 
   const change = Math.max(
-    cashNumber - grandTotal,
+    cashNumber - payableTotal,
     0
   );
 
   const paymentReady =
     paymentMethod === "cash"
-      ? cashNumber >= grandTotal
+      ? cashNumber >= payableTotal
       : true;
 
   const shippingReady =
@@ -560,7 +565,7 @@ export default function PosPage() {
       return;
     }
 
-    if (paymentMethod === "cash" && cashNumber < grandTotal) {
+    if (paymentMethod === "cash" && cashNumber < payableTotal) {
       setErrorMessage(
         "El efectivo recibido no alcanza para cubrir el total (productos + envío + donativo + propina)."
       );
@@ -579,19 +584,18 @@ export default function PosPage() {
     const soldShipping = shippingCost;
     const soldDonation = donationAmount;
     const soldTip = tipAmount;
-    const soldTotal = grandTotal;
+    const soldDiscount = loyalty.discount;
+    const soldTotal = payableTotal;
     const soldChange = change;
     const soldPayment =
       PAYMENT_OPTIONS.find((option) => option.id === paymentMethod)?.label ??
       paymentMethod;
-    const soldCoupon =
-      soldTotal >= 10000
-        ? "CACHA15 · 15% o despensa de $250 en la siguiente visita"
-        : "CACHA10 · 10% de descuento en tu próxima compra (30 días)";
+    const soldCoupon = loyalty.coupon || "Sigue comprando para ganar cupones CACHA.";
     const soldGift =
-      soldTotal >= 10000
-        ? "Regalo por compra mayor a $10,000"
-        : "Cupón de lealtad";
+      loyalty.gift ||
+      (loyalty.nextMin
+        ? `Te faltan $${loyalty.remaining.toFixed(2)} para: ${loyalty.nextGift}`
+        : "Gracias por tu compra");
 
     try {
       const raw = window.localStorage.getItem("erp_pos_sales");
@@ -635,6 +639,7 @@ export default function PosPage() {
       change: paymentMethod === "cash" ? soldChange : 0,
       coupon: soldCoupon,
       gift: soldGift,
+      discount: soldDiscount,
     });
 
     setSuccessMessage(
@@ -697,6 +702,16 @@ export default function PosPage() {
           <p className="mt-1 text-sm text-slate-400">
             Compra, sucursal y personal. Luego te mostramos el recibo para guardarlo o imprimirlo.
           </p>
+          {receipt?.gift ? (
+            <div className="mt-3 rounded-lg border border-amber-600 bg-amber-950/60 p-3 text-sm text-amber-100">
+              <p className="font-semibold">Premio de esta compra</p>
+              <p>{receipt.gift}</p>
+              <p>{receipt.coupon}</p>
+              {receipt.discount > 0 ? (
+                <p>Descuento aplicado ahora: ${receipt.discount.toFixed(2)}</p>
+              ) : null}
+            </div>
+          ) : null}
           {(
             [
               ["Compra", purchaseRating, setPurchaseRating],
@@ -822,11 +837,18 @@ export default function PosPage() {
                 </p>
               )}
               {receipt.tip > 0 && <p>Propina: ${receipt.tip.toFixed(2)}</p>}
+              {receipt.discount > 0 && (
+                <p className="text-emerald-700">
+                  Premio ahora: -${receipt.discount.toFixed(2)}
+                </p>
+              )}
               <p className="text-lg font-bold">Total: ${receipt.total.toFixed(2)}</p>
               <p>Pago: {receipt.payment}</p>
               {receipt.change > 0 && <p>Cambio: ${receipt.change.toFixed(2)}</p>}
-              <p className="pt-2 font-semibold">{receipt.gift}</p>
-              <p>{receipt.coupon}</p>
+              <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
+                <p className="font-semibold text-amber-900">{receipt.gift}</p>
+                <p className="text-sm text-amber-800">{receipt.coupon}</p>
+              </div>
             </div>
             <p className="mt-4 text-sm text-slate-600">
               ¿Quieres guardar el ticket, imprimirlo, o ambos?
@@ -1071,7 +1093,7 @@ export default function PosPage() {
 
                       <button
                         type="button"
-                        disabled={charging}
+                        disabled={charging || item.quantity >= item.stock}
                         onClick={() =>
                           changeQuantityWithArrow(
                             item,
@@ -1086,6 +1108,18 @@ export default function PosPage() {
                         +
                       </button>
                     </div>
+
+                    <p className="mt-2 text-xs text-amber-200">
+                      Inventario disponible: {item.stock}
+                      {item.unit === "KG" ? " kg" : " pzas"}.
+                      {item.quantity >= item.stock
+                        ? " Ya llegaste al máximo; no hay más existencia de este producto."
+                        : ` Puedes agregar hasta ${
+                            item.unit === "KG"
+                              ? Number((item.stock - item.quantity).toFixed(3))
+                              : item.stock - item.quantity
+                          }${item.unit === "KG" ? " kg" : " pzas"} más.`}
+                    </p>
 
                     {item.unit ===
                       "KG" && (
@@ -1127,6 +1161,29 @@ export default function PosPage() {
           )}
 
           <div className="mt-6 space-y-4 border-t border-slate-700 pt-5">
+            <div className="rounded-lg border border-amber-700 bg-amber-950/40 p-3 text-sm text-amber-100">
+              {loyalty.gift ? (
+                <>
+                  <p className="font-semibold">Premio por esta compra</p>
+                  <p>{loyalty.gift}</p>
+                  <p>{loyalty.coupon}</p>
+                  {loyalty.discount > 0 ? (
+                    <p>Descuento ahora: ${loyalty.discount.toFixed(2)}</p>
+                  ) : null}
+                </>
+              ) : loyalty.nextMin ? (
+                <>
+                  <p className="font-semibold">Premios para que compres más</p>
+                  <p>
+                    Te faltan ${loyalty.remaining.toFixed(2)} para llegar a $
+                    {loyalty.nextMin.toLocaleString("es-MX")} y obtener: {loyalty.nextGift}
+                  </p>
+                  <p className="mt-1 text-xs text-amber-200/80">
+                    $500 cupón 5% · $2,500 vale $80 · $10,000 despensa $250 + 5% ahora + cupón 15%
+                  </p>
+                </>
+              ) : null}
+            </div>
             <div>
               <p className="mb-2 text-sm font-semibold text-slate-300">Entrega</p>
               <div className="space-y-2">
@@ -1274,11 +1331,17 @@ export default function PosPage() {
                 <span>Propina</span>
                 <span>${tipAmount.toFixed(2)}</span>
               </div>
+              {loyalty.discount > 0 && (
+                <div className="flex justify-between text-amber-200">
+                  <span>Premio ahora</span>
+                  <span>-${loyalty.discount.toFixed(2)}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between text-2xl font-bold">
               <span>Total a cobrar</span>
-              <span className="text-emerald-400">${grandTotal.toFixed(2)}</span>
+              <span className="text-emerald-400">${payableTotal.toFixed(2)}</span>
             </div>
 
             {paymentMethod === "cash" && (

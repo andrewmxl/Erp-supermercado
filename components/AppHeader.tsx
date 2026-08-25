@@ -49,15 +49,23 @@ export function AppHeader({ profile }: { profile: ErpProfile }) {
     <header className="mb-6 flex flex-col gap-4 border-b border-emerald-900/80 pb-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-amber-300">
-            {STORE_NAME}
-          </p>
-          <p className="text-xs text-emerald-200/80">{STORE_TAGLINE}</p>
+          <Link href="/" className="block hover:opacity-90">
+            <p className="text-sm font-semibold tracking-wide text-amber-300">
+              {STORE_NAME}
+            </p>
+            <p className="text-xs text-emerald-200/80">{STORE_TAGLINE}</p>
+          </Link>
           <p className="mt-1 text-sm text-slate-400">
             {profile.name} · {profile.role}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/"
+            className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500"
+          >
+            Inicio
+          </Link>
           <label className="flex items-center gap-2 rounded-lg border border-emerald-800 bg-slate-900 px-3 py-2 text-sm text-slate-200">
             <span className="text-slate-400">Perfil</span>
             <select

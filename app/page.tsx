@@ -25,9 +25,11 @@ export default function DashboardPage() {
     },
     {
       href: "/inventory",
-      title: "Inventario",
-      text: "Alta, edición, códigos de barras, stock mínimo e imágenes.",
-      show: !isClient(profile.role),
+      title: isClient(profile.role) ? "Catálogo" : "Inventario",
+      text: isClient(profile.role)
+        ? "Ver productos, fotos, código de barras y precio."
+        : "Alta, edición, códigos de barras, stock mínimo e imágenes.",
+      show: true,
     },
     {
       href: "/finance",
@@ -84,7 +86,7 @@ export default function DashboardPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
                 {STORE_NAME}
               </p>
-              <h1 className="mt-1 text-3xl font-bold text-white">Panel de control</h1>
+              <h1 className="mt-1 text-3xl font-bold text-white">Inicio</h1>
               <p className="mt-1 text-sm text-emerald-100">{STORE_TAGLINE}</p>
             </div>
           </div>
