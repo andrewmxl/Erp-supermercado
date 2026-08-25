@@ -31,6 +31,10 @@ type Product = {
   category: string;
 };
 
+type CartItem = Product & {
+  quantity: number;
+};
+
 type ReceiptLine = {
   name: string;
   quantity: number;
