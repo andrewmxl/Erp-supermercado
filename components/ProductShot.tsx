@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { barcodeSrc, hueFrom } from "@/lib/product-media";
 
 export function ProductShot({
@@ -17,67 +18,61 @@ export function ProductShot({
   sku?: string;
   compact?: boolean;
 }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const uploaded = Boolean(
     imageUrl &&
       (imageUrl.includes("supabase.co/storage") || imageUrl.startsWith("blob:"))
   );
-  const hue = hueFrom(`${sku}|${name}|${category}`);
-  const size = compact ? 88 : 220;
-  const title = name || "Producto";
-  const code = sku || "";
+  const width = compact ? 108 : 280;
+  const height = compact ? 108 : 200;
+  const label = name || "Producto";
+  const code = sku || category || "";
+
+  useEffect(() => {
+    if (uploaded) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const hue = hueFrom(`${sku}|${label}|${category}`);
+    ctx.fillStyle = `hsl(${hue}, 70%, 38%)`;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = `hsl(${hue}, 55%, 22%)`;
+    ctx.fillRect(8, 8, width - 16, height - 16);
+
+    ctx.beginPath();
+    ctx.arc(width / 2, height * 0.38, Math.min(width, height) * 0.18, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff6e8";
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.font = compact ? "bold 11px Arial" : "bold 18px Arial";
+    wrapText(ctx, label, width / 2, height * 0.68, width - 16, compact ? 13 : 22);
+    ctx.fillStyle = "#ffe08a";
+    ctx.font = compact ? "10px Arial" : "14px Arial";
+    ctx.fillText(code, width / 2, height - 14);
+  }, [uploaded, label, code, category, sku, width, height]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-300 bg-white">
-      <div className={compact ? "p-1" : "p-2"}>
+    <div className="overflow-hidden rounded-xl border-2 border-amber-400 bg-white">
+      <div className="flex justify-center bg-slate-900 p-1">
         {uploaded ? (
           <img
             src={imageUrl}
-            alt={title}
-            className={compact ? "h-24 w-24 object-cover" : "h-48 w-full object-cover"}
+            alt={label}
+            width={width}
+            height={height}
+            className="rounded-md object-cover"
           />
         ) : (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 400 400"
-            role="img"
-            aria-label={title}
-            className="block rounded-lg"
-          >
-            <rect width="400" height="400" fill={`hsl(${hue}, 62%, 30%)`} />
-            <rect
-              x="16"
-              y="16"
-              width="368"
-              height="368"
-              rx="28"
-              fill={`hsl(${hue}, 48%, 20%)`}
-              stroke="#f6efe4"
-              strokeWidth="10"
-            />
-            <circle cx="200" cy="148" r="58" fill="#f6efe4" />
-            <text
-              x="200"
-              y="262"
-              textAnchor="middle"
-              fill="#f6efe4"
-              fontSize="28"
-              fontFamily="Arial, Helvetica, sans-serif"
-              fontWeight="700"
-            >
-              {title.length > 22 ? `${title.slice(0, 20)}…` : title}
-            </text>
-            <text
-              x="200"
-              y="304"
-              textAnchor="middle"
-              fill="#d9c89a"
-              fontSize="22"
-              fontFamily="Arial, Helvetica, sans-serif"
-            >
-              {code}
-            </text>
-          </svg>
+          <canvas
+            ref={canvasRef}
+            width={width}
+            height={height}
+            className="rounded-md"
+          />
         )}
       </div>
       {barcode ? (
@@ -94,4 +89,28 @@ export function ProductShot({
       ) : null}
     </div>
   );
+}
+
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number
+) {
+  const words = text.split(" ");
+  let line = "";
+  let row = y;
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, row);
+      line = word;
+      row += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, x, row);
 }
