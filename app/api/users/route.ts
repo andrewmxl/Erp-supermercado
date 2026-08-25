@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { CASHIER_REVIEW_PROFILE, REVIEW_PROFILE } from "@/lib/erp";
-import { createDataClient } from "@/utils/supabase/data";
+import { createDataClient, tryCreateDataClient } from "@/utils/supabase/data";
 
 function demoUsers() {
   return [
@@ -68,5 +68,72 @@ export async function GET() {
       source: "demo",
       warning: message,
     });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as {
+      name?: string;
+      email?: string;
+      phone?: string;
+      role?: string;
+    };
+
+    const name = (body.name ?? "").trim();
+    const email = (body.email ?? "").trim().toLowerCase();
+    const phone = (body.phone ?? "").trim();
+    const role = (body.role ?? "").trim();
+
+    if (!name || !email || !phone || !role) {
+      return NextResponse.json(
+        { error: "Nombre, correo, teléfono y puesto son obligatorios." },
+        { status: 400 }
+      );
+    }
+
+    const user = {
+      id: crypto.randomUUID(),
+      name,
+      email,
+      phone,
+      role,
+      active: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const supabase = tryCreateDataClient();
+      if (supabase) {
+        const insert = supabase.from("AppUser").insert({
+          id: user.id,
+          name,
+          email,
+          role,
+          active: true,
+        });
+        const timeout = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("timeout")), 8000);
+        });
+        const { error } = await Promise.race([insert, timeout]);
+        if (!error) {
+          return NextResponse.json({ user, source: "database" });
+        }
+      }
+    } catch {
+      // Alta local si Auth/AppUser no está listo en el demo.
+    }
+
+    return NextResponse.json({
+      user,
+      source: "local",
+      warning:
+        "El usuario quedó en esta sesión. En producción también debe existir en Authentication.",
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "No se pudo dar de alta el usuario." },
+      { status: 500 }
+    );
   }
 }

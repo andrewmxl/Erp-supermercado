@@ -7,6 +7,9 @@ export type StoreFeedback = {
   contact: string;
   message: string;
   rating: number | null;
+  purchaseRating?: number | null;
+  storeRating?: number | null;
+  cashierRating?: number | null;
   createdAt: string;
 };
 

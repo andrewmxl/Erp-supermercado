@@ -1,5 +1,8 @@
 export const STORE_NAME = "Supermercado Cachanilla";
 export const STORE_TAGLINE = "Abarrotes, fresco y despensa · Mexicali, B.C.";
+export const STORE_ADDRESS = "Calle Comercial 120, Centro Cívico, Mexicali, B.C.";
+export const STORE_PHONE = "686 123 4500";
+export const STORE_RFC = "SCA010101XX1";
 export const STORE_HERO_IMAGE =
   "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1600&q=80";
 

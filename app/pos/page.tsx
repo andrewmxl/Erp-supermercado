@@ -9,6 +9,10 @@ import {
   CHARITY_NAME,
   PAYMENT_OPTIONS,
   SHIPPING_OPTIONS,
+  STORE_ADDRESS,
+  STORE_NAME,
+  STORE_PHONE,
+  STORE_RFC,
   TRANSFER_INFO,
   type PaymentMethod,
   type ShippingId,
@@ -28,8 +32,26 @@ type Product = {
   category: string;
 };
 
-type CartItem = Product & {
+type ReceiptLine = {
+  name: string;
   quantity: number;
+  price: number;
+};
+
+type SaleReceipt = {
+  folio: string;
+  dateLabel: string;
+  cashier: string;
+  items: ReceiptLine[];
+  subtotal: number;
+  shipping: number;
+  donation: number;
+  tip: number;
+  total: number;
+  payment: string;
+  change: number;
+  coupon: string;
+  gift: string;
 };
 
 function parseQuantity(value: string) {
@@ -80,6 +102,10 @@ export default function PosPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [askRating, setAskRating] = useState(false);
   const [ratingSaved, setRatingSaved] = useState("");
+  const [receipt, setReceipt] = useState<SaleReceipt | null>(null);
+  const [purchaseRating, setPurchaseRating] = useState(0);
+  const [storeRating, setStoreRating] = useState(0);
+  const [cashierRating, setCashierRating] = useState(0);
 
   async function loadProducts() {
     setLoading(true);
@@ -478,185 +504,115 @@ export default function PosPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const supabase = createClient();
-
     const saleId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
-
-    const { error: saleError } = await supabase
-      .from("Sale")
-      .insert({
-        id: saleId,
-        cashRegister: 1,
-        totalAmount: grandTotal,
-        userId: profile.id,
-        createdAt,
-      });
-
-    if (saleError) {
-      setErrorMessage(
-        `No se pudo registrar la venta: ${saleError.message}`
-      );
-
-      setCharging(false);
-      return;
-    }
-
-    const saleItems = cart.map((item) => ({
-      id: crypto.randomUUID(),
-      saleId,
-      productId: item.id,
-      quantity: item.quantity,
-      price: Number(item.price.toFixed(2)),
-    }));
-
-    const { error: itemsError } = await supabase
-      .from("SaleItem")
-      .insert(saleItems);
-
-    if (itemsError) {
-      await supabase
-        .from("Sale")
-        .delete()
-        .eq("id", saleId);
-
-      setErrorMessage(
-        `No se pudieron guardar los productos de la venta: ${itemsError.message}`
-      );
-
-      setCharging(false);
-      return;
-    }
-
-    const updatedProducts: {
-      id: string;
-      previousStock: number;
-    }[] = [];
-
-    for (const item of cart) {
-      const newStock = Number(
-        (item.stock - item.quantity).toFixed(3)
-      );
-
-      if (newStock < 0) {
-        for (const previous of updatedProducts) {
-          await supabase
-            .from("Product")
-            .update({
-              stock: previous.previousStock,
-            })
-            .eq("id", previous.id);
-        }
-
-        await supabase
-          .from("SaleItem")
-          .delete()
-          .eq("saleId", saleId);
-
-        await supabase
-          .from("Sale")
-          .delete()
-          .eq("id", saleId);
-
-        setErrorMessage(
-          `No hay suficiente existencia de ${item.name}.`
-        );
-
-        setCharging(false);
-        return;
-      }
-
-      const { error: stockError } = await supabase
-        .from("Product")
-        .update({
-          stock: newStock,
-        })
-        .eq("id", item.id);
-
-      if (stockError) {
-        for (const previous of updatedProducts) {
-          await supabase
-            .from("Product")
-            .update({
-              stock: previous.previousStock,
-            })
-            .eq("id", previous.id);
-        }
-
-        await supabase
-          .from("SaleItem")
-          .delete()
-          .eq("saleId", saleId);
-
-        await supabase
-          .from("Sale")
-          .delete()
-          .eq("id", saleId);
-
-        setErrorMessage(
-          `No se pudo actualizar el inventario: ${stockError.message}`
-        );
-
-        setCharging(false);
-        return;
-      }
-
-      updatedProducts.push({
-        id: item.id,
-        previousStock: item.stock,
-      });
-
-      await supabase.from("InventoryMovement").insert({
-        id: crypto.randomUUID(),
-        productId: item.id,
-        type: "OUT",
-        quantity: item.quantity,
-        reason: `Venta ${saleId}`,
-        createdAt,
-      });
-    }
-
-    const paymentLabel =
+    const folio = saleId.slice(0, 8).toUpperCase();
+    const soldCart = cart.map((item) => ({ ...item }));
+    const soldSubtotal = subtotal;
+    const soldShipping = shippingCost;
+    const soldDonation = donationAmount;
+    const soldTip = tipAmount;
+    const soldTotal = grandTotal;
+    const soldCash = cashNumber;
+    const soldChange = change;
+    const soldPayment =
       PAYMENT_OPTIONS.find((option) => option.id === paymentMethod)?.label ??
       paymentMethod;
+    const soldCoupon =
+      soldTotal >= 10000
+        ? "CACHA15 · 15% o despensa de $250 en la siguiente visita"
+        : "CACHA10 · 10% de descuento en tu próxima compra (30 días)";
+    const soldGift =
+      soldTotal >= 10000
+        ? "Regalo por compra mayor a $10,000"
+        : "Cupón de lealtad";
 
-    const ticketParts = [
-      `Ticket ${saleId.slice(0, 8)}`,
-      `Pago: ${paymentLabel}`,
-      `Entrega: ${shipping.label} ($${shippingCost.toFixed(2)})`,
-    ];
+    try {
+      const supabase = createClient();
+      const persist = (async () => {
+        const { error: saleError } = await supabase.from("Sale").insert({
+          id: saleId,
+          cashRegister: 1,
+          totalAmount: soldTotal,
+          userId: profile.id,
+          createdAt,
+        });
+        if (saleError) throw saleError;
 
-    if (shippingId !== "pickup") {
-      ticketParts.push(`Dirección: ${deliveryAddress.trim()}`);
-    }
-    if (donationAmount > 0) {
-      ticketParts.push(`Donativo ${CHARITY_NAME}: $${donationAmount.toFixed(2)}`);
-    }
-    if (tipAmount > 0) {
-      ticketParts.push(`Propina cajero: $${tipAmount.toFixed(2)}`);
-    }
-    if (paymentMethod === "cash") {
-      ticketParts.push(`Cambio: $${(cashNumber - grandTotal).toFixed(2)}`);
-    } else if (paymentMethod === "transfer") {
-      ticketParts.push(
-        `SPEI ${TRANSFER_INFO.bank} ${TRANSFER_INFO.clabe} · ${TRANSFER_INFO.concept}`
-      );
-    } else {
-      ticketParts.push("Terminal: pago aprobado");
+        const { error: itemsError } = await supabase.from("SaleItem").insert(
+          soldCart.map((item) => ({
+            id: crypto.randomUUID(),
+            saleId,
+            productId: item.id,
+            quantity: item.quantity,
+            price: Number(item.price.toFixed(2)),
+          }))
+        );
+        if (itemsError) throw itemsError;
+
+        for (const item of soldCart) {
+          const newStock = Number((item.stock - item.quantity).toFixed(3));
+          if (newStock < 0) continue;
+          await supabase.from("Product").update({ stock: newStock }).eq("id", item.id);
+          await supabase.from("InventoryMovement").insert({
+            id: crypto.randomUUID(),
+            productId: item.id,
+            type: "OUT",
+            quantity: item.quantity,
+            reason: `Venta ${saleId}`,
+            createdAt,
+          });
+        }
+      })();
+
+      await Promise.race([
+        persist,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 8000)
+        ),
+      ]);
+    } catch {
+      // La caja no se bloquea si Supabase no responde: el ticket se emite igual.
     }
 
-    if (grandTotal >= 10000) {
-      ticketParts.push(
-        "Regalo por compra mayor a $10,000: despensa de $250 o 15% en la siguiente visita (cupón CACHA15)"
-      );
-    } else {
-      ticketParts.push("Cupón CACHA10: 10% de descuento en tu próxima compra (30 días)");
-    }
+    setProducts((current) =>
+      current.map((product) => {
+        const sold = soldCart.find((item) => item.id === product.id);
+        if (!sold) return product;
+        return {
+          ...product,
+          stock: Number((product.stock - sold.quantity).toFixed(3)),
+        };
+      })
+    );
+
+    setReceipt({
+      folio,
+      dateLabel: new Date(createdAt).toLocaleString("es-MX"),
+      cashier: `${profile.name} · ${profile.role}`,
+      items: soldCart.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      subtotal: soldSubtotal,
+      shipping: soldShipping,
+      donation: soldDonation,
+      tip: soldTip,
+      total: soldTotal,
+      payment: soldPayment,
+      change: paymentMethod === "cash" ? soldChange : 0,
+      coupon: soldCoupon,
+      gift: soldGift,
+    });
 
     setSuccessMessage(
-      `Venta cobrada. Subtotal $${subtotal.toFixed(2)} · Total $${grandTotal.toFixed(2)}. ${ticketParts.join(" · ")}`
+      `Venta cobrada. Folio ${folio}. Total $${soldTotal.toFixed(2)}. Entrega el ticket al cliente.`
     );
     setAskRating(true);
+    setPurchaseRating(0);
+    setStoreRating(0);
+    setCashierRating(0);
     setRatingSaved("");
 
     setCart([]);
@@ -669,10 +625,9 @@ export default function PosPage() {
     setDeliveryAddress("");
     setShippingId("pickup");
     setPaymentMethod("cash");
-
-    await loadProducts();
-
     setCharging(false);
+
+    void loadProducts();
   }
 
   if (checking || !profile) {
@@ -702,37 +657,134 @@ export default function PosPage() {
         </div>
       )}
 
+      {receipt && (
+        <section className="mb-5 rounded-xl border border-emerald-800 bg-white p-5 text-slate-900">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-emerald-800">
+                Ticket de compra
+              </p>
+              <h2 className="text-2xl font-bold">{STORE_NAME}</h2>
+              <p className="text-sm text-slate-600">{STORE_ADDRESS}</p>
+              <p className="text-sm text-slate-600">
+                Tel. {STORE_PHONE} · RFC {STORE_RFC}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-lg font-bold">Folio {receipt.folio}</p>
+              <p className="text-sm text-slate-600">{receipt.dateLabel}</p>
+              <p className="text-sm text-slate-600">{receipt.cashier}</p>
+            </div>
+          </div>
+          <table className="mt-4 w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-slate-500">
+                <th className="py-2">Producto</th>
+                <th className="py-2">Cant.</th>
+                <th className="py-2 text-right">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receipt.items.map((item, index) => (
+                <tr key={`${item.name}-${index}`} className="border-b border-slate-100">
+                  <td className="py-2">{item.name}</td>
+                  <td className="py-2">{item.quantity}</td>
+                  <td className="py-2 text-right">
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4 space-y-1 text-sm">
+            <p>Subtotal: ${receipt.subtotal.toFixed(2)}</p>
+            {receipt.shipping > 0 && <p>Envío: ${receipt.shipping.toFixed(2)}</p>}
+            {receipt.donation > 0 && (
+              <p>
+                Donativo {CHARITY_NAME}: ${receipt.donation.toFixed(2)}
+              </p>
+            )}
+            {receipt.tip > 0 && <p>Propina: ${receipt.tip.toFixed(2)}</p>}
+            <p className="text-lg font-bold">Total: ${receipt.total.toFixed(2)}</p>
+            <p>Pago: {receipt.payment}</p>
+            {receipt.change > 0 && <p>Cambio: ${receipt.change.toFixed(2)}</p>}
+            <p className="pt-2 font-semibold">{receipt.gift}</p>
+            <p>{receipt.coupon}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="mt-4 rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            Imprimir / mostrar al cliente
+          </button>
+        </section>
+      )}
+
       {askRating && (
         <div className="mb-5 rounded-xl border border-amber-800 bg-slate-900 p-5">
           <p className="font-semibold text-amber-200">
-            ¿Cómo te fue en esta compra? (opcional)
+            Califica esta visita (opcional)
           </p>
           <p className="mt-1 text-sm text-slate-400">
-            Califica el ticket o al personal de caja. También puedes omitir.
+            Compra, sucursal y cajero. Puedes omitir.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {[1, 2, 3, 4, 5].map((stars) => (
-              <button
-                key={stars}
-                type="button"
-                onClick={() => {
-                  saveFeedback({
-                    id: crypto.randomUUID(),
-                    kind: "calificacion",
-                    name: "Cliente en caja",
-                    contact: "",
-                    message: `Calificación posterior a la compra: ${stars} de 5.`,
-                    rating: stars,
-                    createdAt: new Date().toISOString(),
-                  });
-                  setAskRating(false);
-                  setRatingSaved(`Gracias. Guardamos ${stars} de 5 estrellas.`);
-                }}
-                className="rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-600"
-              >
-                {stars} ★
-              </button>
-            ))}
+          {(
+            [
+              ["Compra", purchaseRating, setPurchaseRating],
+              ["Sucursal", storeRating, setStoreRating],
+              ["Cajero", cashierRating, setCashierRating],
+            ] as const
+          ).map(([label, value, setter]) => (
+            <div key={label} className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="w-24 text-sm text-slate-300">{label}</span>
+              {[1, 2, 3, 4, 5].map((stars) => (
+                <button
+                  key={stars}
+                  type="button"
+                  onClick={() => setter(stars)}
+                  className={`rounded-lg px-3 py-1 text-sm font-semibold ${
+                    value >= stars
+                      ? "bg-amber-600 text-white"
+                      : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+                  }`}
+                >
+                  {stars} ★
+                </button>
+              ))}
+            </div>
+          ))}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const scores = [purchaseRating, storeRating, cashierRating].filter(
+                  (value) => value > 0
+                );
+                const average = scores.length
+                  ? Math.round(
+                      scores.reduce((sum, value) => sum + value, 0) / scores.length
+                    )
+                  : null;
+                saveFeedback({
+                  id: crypto.randomUUID(),
+                  kind: "calificacion",
+                  name: "Cliente en caja",
+                  contact: "",
+                  message: `Compra ${purchaseRating}/5 · sucursal ${storeRating}/5 · cajero ${cashierRating}/5. Folio ${receipt?.folio ?? ""}.`,
+                  rating: average || null,
+                  purchaseRating,
+                  storeRating,
+                  cashierRating,
+                  createdAt: new Date().toISOString(),
+                });
+                setAskRating(false);
+                setRatingSaved("Gracias. Guardamos tu calificación.");
+              }}
+              className="rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-600"
+            >
+              Enviar calificación
+            </button>
             <button
               type="button"
               onClick={() => setAskRating(false)}
@@ -792,6 +844,7 @@ export default function PosPage() {
                     category={product.category}
                     imageUrl={product.imageUrl}
                     barcode={product.barcode}
+                    sku={product.sku}
                   />
 
                   <h2 className="text-lg font-semibold">

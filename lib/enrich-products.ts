@@ -18,7 +18,11 @@ export async function enrichProductMedia() {
     const barcode =
       String(product.barcode ?? "").trim() ||
       barcodeFromSku(product.sku || product.id, index + 1);
-    const imageUrl = photoForProduct(product.name ?? "", product.category ?? "");
+    const imageUrl = photoForProduct(
+      product.name ?? "",
+      product.category ?? "",
+      product.sku ?? ""
+    );
 
     const { error: updateError } = await supabase
       .from("Product")

@@ -41,7 +41,7 @@ const PHOTO = {
   tunaCan: "https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?auto=format&fit=crop&w=700&q=80",
   pasta: "https://images.unsplash.com/photo-1551462147-ff29053bfc14?auto=format&fit=crop&w=700&q=80",
   flour: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=700&q=80",
-  salt: "https://images.unsplash.com/photo-1518112166131-a2c7d7d0d6f6?auto=format&fit=crop&w=700&q=80",
+  salt: "https://images.unsplash.com/photo-1526434426615-1abe80db40ca?auto=format&fit=crop&w=700&q=80",
   cereal: "https://images.unsplash.com/photo-1521483457605-9b486d5455c4?auto=format&fit=crop&w=700&q=80",
   cookies: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=700&q=80",
   chocolate: "https://images.unsplash.com/photo-1511381939415-e44015466831?auto=format&fit=crop&w=700&q=80",
@@ -62,7 +62,7 @@ const PHOTO = {
   detergent: "https://images.unsplash.com/photo-1585421514738-01798e348015?auto=format&fit=crop&w=700&q=80",
   soap: "https://images.unsplash.com/photo-1584305574647-0cc949a2bb7f?auto=format&fit=crop&w=700&q=80",
   toilet: "https://images.unsplash.com/photo-1584556812952-905ffd0c611a?auto=format&fit=crop&w=700&q=80",
-  toothpaste: "https://images.unsplash.com/photo-1559591935-c7cc536d5d0e?auto=format&fit=crop&w=700&q=80",
+  toothpaste: "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=700&q=80",
   shampoo: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=700&q=80",
   diaper: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=700&q=80",
   catFood: "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=700&q=80",
@@ -70,7 +70,7 @@ const PHOTO = {
   dogFood: "https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=700&q=80",
   pizza: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=700&q=80",
   honey: "https://images.unsplash.com/photo-1587049352851-8d4e89133924?auto=format&fit=crop&w=700&q=80",
-  napkins: "https://images.unsplash.com/photo-1583947215253-8a5b3d4d0d1a?auto=format&fit=crop&w=700&q=80",
+  napkins: "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=700&q=80",
   soup: "https://images.unsplash.com/photo-1547592166-23acba3f66fd?auto=format&fit=crop&w=700&q=80",
   puree: "https://images.unsplash.com/photo-1472476443507-c7a9bab28552?auto=format&fit=crop&w=700&q=80",
   chorizo: "https://images.unsplash.com/photo-1615937657715-bc7b4b7962c1?auto=format&fit=crop&w=700&q=80",
@@ -78,7 +78,7 @@ const PHOTO = {
   catCollar: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=700&q=80",
   dogCollar: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=700&q=80",
   tea: "https://images.unsplash.com/photo-1556679343-c7306c197375?auto=format&fit=crop&w=700&q=80",
-  mayo: "https://images.unsplash.com/photo-1472476443507-c7a9bab28552?auto=format&fit=crop&w=700&q=80",
+  mayo: "https://images.unsplash.com/photo-1568901838715-cd0cda187b0b?auto=format&fit=crop&w=700&q=80",
   ketchup: "https://images.unsplash.com/photo-1528756514091-dee5ecaa3278?auto=format&fit=crop&w=700&q=80",
   foil: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=700&q=80",
   bags: "https://images.unsplash.com/photo-1595273670150-bd0c3cafae1b?auto=format&fit=crop&w=700&q=80",
@@ -109,20 +109,20 @@ const KEYWORDS: Array<[string, string]> = [
   ["toalla sanitaria", PHOTO.diaper],
   ["pasta dental", PHOTO.toothpaste],
   ["agua mineral", PHOTO.sparklingWater],
-  ["agua purificada", PHOTO.gallonWater],
+  ["agua purificada 1l", PHOTO.waterBottle],
+  ["agua purificada 600ml", PHOTO.waterBottle],
   ["refresco cola 2l", PHOTO.sodaBottle],
-  ["refresco limon 2l", PHOTO.sodaBottle],
+  ["refresco limon 2l", "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=700&q=80"],
   ["cola 2l", PHOTO.sodaBottle],
   ["refresco cola", PHOTO.sodaBottle],
   ["cerveza", PHOTO.beer],
-  ["355ml", PHOTO.sodaCan],
   ["bebida deportiva", PHOTO.sodaBottle],
   ["nectar de mango", PHOTO.juiceBottle],
   ["jugo de naranja", PHOTO.juiceBottle],
   ["leche evaporada", PHOTO.evaporated],
   ["leche condensada", PHOTO.evaporated],
   ["yogur fresa", PHOTO.yogurtCup],
-  ["yogur natural", PHOTO.iceCream],
+  ["yogur natural", PHOTO.yogurtCup],
   ["queso manchego", PHOTO.cheese],
   ["queso panela", PHOTO.cheese],
   ["crema acida", PHOTO.cream],
@@ -219,32 +219,167 @@ const KEYWORDS: Array<[string, string]> = [
   ["pizza", PHOTO.pizza],
 ];
 
-const CATEGORY_PHOTO: Record<string, string> = {
-  lacteos: PHOTO.milk,
-  abarrotes: PHOTO.grocery,
-  "panaderia y tortillas": PHOTO.tortilla,
-  bebidas: PHOTO.sodaBottle,
-  "frutas y verduras": PHOTO.apple,
-  "carnes y proteinas": PHOTO.chicken,
-  limpieza: PHOTO.detergent,
-  "higiene personal": PHOTO.soap,
-  congelados: PHOTO.iceCream,
-  hogar: PHOTO.bags,
-  mascotas: PHOTO.catFood,
+export function placeholderPhoto(name: string) {
+  return `https://placehold.co/640x480/1e3d32/f4efe6/png?text=${encodeURIComponent(name.slice(0, 22))}`;
+}
+
+const EXACT: Record<string, string> = {
+  "yogur natural 1l": PHOTO.yogurtCup,
+  "yogur fresa 220g": "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=700&q=80",
+  "huevo blanco 18 pzas": "https://images.unsplash.com/photo-1582722872448-002de8dc8f87?auto=format&fit=crop&w=700&q=80",
+  "aceite vegetal 1l": PHOTO.oilBottle,
+  "agua purificada 1l": "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=700&q=80",
+  "agua purificada 600ml": "https://images.unsplash.com/photo-1616118132534-381148898bb4?auto=format&fit=crop&w=700&q=80",
+  "agua mineral 600ml": PHOTO.sparklingWater,
+  "refresco cola 2l": "https://images.unsplash.com/photo-1629203851122-3726ecdf080e?auto=format&fit=crop&w=700&q=80",
+  "refresco limon 2l": "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=700&q=80",
+  "detergente liquido 1l": PHOTO.detergent,
+  "sal yodada 1kg": "https://images.unsplash.com/photo-1526434426615-1abe80db40ca?auto=format&fit=crop&w=700&q=80",
+  "mayonesa 390g": "https://images.unsplash.com/photo-1568901838715-cd0cda187b0b?auto=format&fit=crop&w=700&q=80",
+  "cereal de maiz 500g": "https://images.unsplash.com/photo-1517685352821-92cf88aee5a0?auto=format&fit=crop&w=700&q=80",
+  "chocolate en polvo 400g": "https://images.unsplash.com/photo-1606312619070-d48b4e497ee8?auto=format&fit=crop&w=700&q=80",
+  "salchicha de pavo 500g": PHOTO.sausage,
+  "pasta dental 100ml": "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&w=700&q=80",
+  "jabon de tocador 150g": PHOTO.soap,
+  "cloro 1l": "https://images.unsplash.com/photo-1583945494685-5c5b0f3c0c0d?auto=format&fit=crop&w=700&q=80",
+  "suavizante de telas 850ml": "https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?auto=format&fit=crop&w=700&q=80",
+  "pure de tomate 210g": "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&w=700&q=80",
+  "sopa instantanea 64g": PHOTO.soup,
+  "te negro 25 sobres": PHOTO.tea,
+  "helado vainilla 1l": PHOTO.iceCream,
+  "bebida deportiva 1l": "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=700&q=80",
+  "cerveza sin alcohol 355ml": PHOTO.beer,
+  "servilletas 250 pzas": "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=700&q=80",
+  "bolsas para basura 20 pzas": PHOTO.bags,
+  "esponja para trastes 3 pzas": "https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=700&q=80",
+  "lavatrastes liquido 750ml": "https://images.unsplash.com/photo-1583947215253-8a5b3d4d0d1c?auto=format&fit=crop&w=700&q=80",
+  "toallas sanitarias 10 pzas": PHOTO.diaper,
+  "leche entera 1l": PHOTO.milk,
+  "leche deslactosada 1l": PHOTO.cream,
 };
 
-export function photoForProduct(name: string, category = "") {
+const SKU_PHOTO: Record<string, string> = {
+  "LAC-001": PHOTO.milk,
+  "LAC-002": PHOTO.cream,
+  "LAC-003": PHOTO.yogurtCup,
+  "LAC-004": PHOTO.cheese,
+  "LAC-005": PHOTO.cream,
+  "LAC-006": PHOTO.butter,
+  "LAC-007": PHOTO.evaporated,
+  "LAC-008": "https://images.unsplash.com/photo-1588195538326-c5b1e9f80caf?auto=format&fit=crop&w=700&q=80",
+  "LAC-009": "https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&w=700&q=80",
+  "LAC-010": "https://images.unsplash.com/photo-1571212515416-fca988018b1e?auto=format&fit=crop&w=700&q=80",
+  "ABA-001": PHOTO.egg,
+  "ABA-002": PHOTO.rice,
+  "ABA-003": PHOTO.beans,
+  "ABA-004": PHOTO.sugar,
+  "ABA-005": PHOTO.oilBottle,
+  "ABA-006": PHOTO.coffeeJar,
+  "ABA-007": PHOTO.tunaCan,
+  "ABA-008": "https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?auto=format&fit=crop&w=700&q=80",
+  "ABA-009": PHOTO.pasta,
+  "ABA-010": PHOTO.flour,
+  "ABA-011": PHOTO.salt,
+  "ABA-012": PHOTO.mayo,
+  "ABA-013": PHOTO.ketchup,
+  "ABA-014": PHOTO.cereal,
+  "ABA-015": PHOTO.cookies,
+  "ABA-016": PHOTO.chocolate,
+  "ABA-017": PHOTO.oatmeal,
+  "ABA-018": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=700&q=80",
+  "ABA-019": "https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=700&q=80",
+  "ABA-020": PHOTO.puree,
+  "ABA-021": PHOTO.pepper,
+  "ABA-022": PHOTO.soup,
+  "ABA-023": PHOTO.honey,
+  "ABA-024": "https://images.unsplash.com/photo-1587049352851-8d4e89133924?auto=format&fit=crop&w=700&q=80",
+  "ABA-025": "https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=700&q=80",
+  "ABA-026": PHOTO.tea,
+  "PAN-001": PHOTO.tortilla,
+  "PAN-002": PHOTO.bread,
+  "BEB-001": PHOTO.waterBottle,
+  "BEB-002": PHOTO.gallonWater,
+  "BEB-003": PHOTO.sodaBottle,
+  "BEB-004": PHOTO.juiceBottle,
+  "BEB-005": PHOTO.sparklingWater,
+  "BEB-006": "https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=700&q=80",
+  "BEB-007": "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?auto=format&fit=crop&w=700&q=80",
+  "BEB-008": PHOTO.mango,
+  "BEB-009": PHOTO.beer,
+  "FRU-001": PHOTO.apple,
+  "FRU-002": PHOTO.banana,
+  "FRU-003": PHOTO.tomato,
+  "FRU-004": PHOTO.onion,
+  "FRU-005": PHOTO.potato,
+  "FRU-006": PHOTO.avocado,
+  "FRU-007": PHOTO.orange,
+  "FRU-008": PHOTO.lemon,
+  "FRU-009": PHOTO.carrot,
+  "FRU-010": PHOTO.pepper,
+  "FRU-011": PHOTO.cucumber,
+  "FRU-012": PHOTO.grape,
+  "FRU-013": PHOTO.pear,
+  "FRU-014": PHOTO.watermelon,
+  "FRU-015": PHOTO.melon,
+  "FRU-016": PHOTO.mango,
+  "FRU-017": PHOTO.lettuce,
+  "FRU-018": PHOTO.broccoli,
+  "FRU-019": PHOTO.zucchini,
+  "FRU-020": PHOTO.garlic,
+  "CAR-001": PHOTO.chicken,
+  "CAR-002": PHOTO.beef,
+  "CAR-003": PHOTO.ham,
+  "CAR-004": PHOTO.sausage,
+  "CAR-005": PHOTO.pork,
+  "CAR-006": PHOTO.fish,
+  "CAR-007": "https://images.unsplash.com/photo-1603048297172-c92544798d5a?auto=format&fit=crop&w=700&q=80",
+  "CAR-008": "https://images.unsplash.com/photo-1602470520998-f4a52199a3d6?auto=format&fit=crop&w=700&q=80",
+  "CAR-009": PHOTO.nuggets,
+  "CAR-010": PHOTO.chorizo,
+  "LIM-001": PHOTO.detergent,
+  "LIM-002": "https://images.unsplash.com/photo-1583947215253-8a5b3d4d0d1c?auto=format&fit=crop&w=700&q=80",
+  "LIM-003": "https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?auto=format&fit=crop&w=700&q=80",
+  "LIM-004": "https://images.unsplash.com/photo-1563453392212-326f5e854473?auto=format&fit=crop&w=700&q=80",
+  "LIM-005": PHOTO.foil,
+  "LIM-006": "https://images.unsplash.com/photo-1585421514738-01798e348015?auto=format&fit=crop&w=700&q=80",
+  "HIG-001": PHOTO.toilet,
+  "HIG-002": PHOTO.toothpaste,
+  "HIG-003": PHOTO.soap,
+  "HIG-004": PHOTO.shampoo,
+  "HIG-005": "https://images.unsplash.com/photo-1571781926291-c477ebcc971f?auto=format&fit=crop&w=700&q=80",
+  "HIG-006": PHOTO.diaper,
+  "HIG-007": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=700&q=80",
+  "HOG-001": PHOTO.napkins,
+  "HOG-002": PHOTO.foil,
+  "HOG-003": PHOTO.bags,
+  "MAS-001": PHOTO.dogFood,
+  "MAS-002": PHOTO.catFood,
+  "MAS-003": PHOTO.catLitter,
+};
+
+export function photoForProduct(name: string, category = "", sku = "") {
+  if (sku && SKU_PHOTO[sku]) {
+    return SKU_PHOTO[sku];
+  }
   const foldedName = fold(name);
+  if (EXACT[foldedName]) {
+    return EXACT[foldedName];
+  }
   const sorted = [...KEYWORDS].sort((a, b) => b[0].length - a[0].length);
   for (const [keyword, url] of sorted) {
     if (foldedName.includes(fold(keyword))) {
       return url;
     }
   }
-  return CATEGORY_PHOTO[fold(category)] ?? PHOTO.grocery;
+  return placeholderPhoto(`${sku || name}`);
 }
 
-export function displayPhoto(name: string, category: string, storedUrl?: string) {
+export function displayPhoto(
+  name: string,
+  category: string,
+  storedUrl?: string,
+  sku?: string
+) {
   const url = (storedUrl ?? "").trim();
   const customUpload =
     url.startsWith("data:") ||
@@ -255,7 +390,7 @@ export function displayPhoto(name: string, category: string, storedUrl?: string)
     return url;
   }
 
-  return photoForProduct(name, category);
+  return photoForProduct(name, category, sku);
 }
 
 export function barcodeSrc(code: string) {

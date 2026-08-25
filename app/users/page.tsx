@@ -15,6 +15,7 @@ type AppUser = {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: string;
   active: boolean;
   createdAt?: string | null;
@@ -28,6 +29,12 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newRole, setNewRole] = useState<(typeof STAFF_ROLES)[number]>("Cajero");
   const currentUserEmail = profile?.email ?? "";
 
   function demoUsers(): AppUser[] {
@@ -73,6 +80,7 @@ export default function UsersPage() {
         id: user.id,
         name: user.name ?? "",
         email: user.email ?? "",
+        phone: user.phone ?? "",
         role: user.role ?? "",
         active: Boolean(user.active),
         createdAt: user.createdAt ?? null,
@@ -106,6 +114,7 @@ export default function UsersPage() {
       (user) =>
         user.name.toLowerCase().includes(text) ||
         user.email.toLowerCase().includes(text) ||
+        (user.phone ?? "").toLowerCase().includes(text) ||
         user.role.toLowerCase().includes(text)
     );
   }, [users, search]);
@@ -195,6 +204,77 @@ export default function UsersPage() {
     setSavingId(null);
   }
 
+  async function addUser() {
+    const name = newName.trim();
+    const email = newEmail.trim();
+    const phone = newPhone.trim();
+
+    if (!name || !email || !phone || !newRole) {
+      setErrorMessage("Nombre, correo, teléfono y puesto son obligatorios.");
+      return;
+    }
+
+    setCreating(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 10000);
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone, role: newRole }),
+        signal: controller.signal,
+      });
+      window.clearTimeout(timer);
+
+      const payload = (await response.json()) as {
+        user?: AppUser;
+        error?: string;
+        warning?: string;
+      };
+
+      if (!response.ok || !payload.user) {
+        setErrorMessage(payload.error ?? "No se pudo dar de alta el usuario.");
+        setCreating(false);
+        return;
+      }
+
+      setUsers((current) => [payload.user as AppUser, ...current]);
+      setNewName("");
+      setNewEmail("");
+      setNewPhone("");
+      setNewRole("Cajero");
+      setShowAddForm(false);
+      setSuccessMessage(
+        payload.warning
+          ? `"${name}" se agregó en esta sesión. ${payload.warning}`
+          : `"${name}" se agregó con puesto ${newRole}.`
+      );
+    } catch {
+      const localUser: AppUser = {
+        id: crypto.randomUUID(),
+        name,
+        email,
+        phone,
+        role: newRole,
+        active: true,
+        createdAt: new Date().toISOString(),
+      };
+      setUsers((current) => [localUser, ...current]);
+      setNewName("");
+      setNewEmail("");
+      setNewPhone("");
+      setShowAddForm(false);
+      setSuccessMessage(
+        `"${name}" se agregó en esta sesión (el servidor no respondió).`
+      );
+    }
+
+    setCreating(false);
+  }
+
   if (checking || !profile) {
     return <SessionScreen message="Verificando sesión..." />;
   }
@@ -255,6 +335,13 @@ export default function UsersPage() {
             />
             <button
               type="button"
+              onClick={() => setShowAddForm((open) => !open)}
+              className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold hover:bg-emerald-600"
+            >
+              {showAddForm ? "Cerrar" : "Agregar usuario"}
+            </button>
+            <button
+              type="button"
               onClick={loadUsers}
               disabled={loading || Boolean(savingId)}
               className="rounded-lg bg-slate-700 px-4 py-2 hover:bg-slate-600 disabled:opacity-40"
@@ -263,6 +350,51 @@ export default function UsersPage() {
             </button>
           </div>
         </div>
+
+        {showAddForm && (
+          <div className="mb-6 grid gap-3 rounded-xl border border-emerald-900 bg-slate-950 p-4 md:grid-cols-2">
+            <input
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              placeholder="Nombre completo *"
+              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
+            />
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(event) => setNewEmail(event.target.value)}
+              placeholder="Correo *"
+              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
+            />
+            <input
+              value={newPhone}
+              onChange={(event) => setNewPhone(event.target.value)}
+              placeholder="Teléfono *"
+              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
+            />
+            <select
+              value={newRole}
+              onChange={(event) =>
+                setNewRole(event.target.value as (typeof STAFF_ROLES)[number])
+              }
+              className="rounded-lg border border-slate-700 bg-slate-900 p-3 outline-none focus:border-sky-500"
+            >
+              {STAFF_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => void addUser()}
+              disabled={creating}
+              className="rounded-lg bg-emerald-700 px-4 py-3 font-semibold hover:bg-emerald-600 disabled:opacity-40 md:col-span-2"
+            >
+              {creating ? "Guardando..." : "Guardar usuario"}
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="p-10 text-center text-slate-400">Cargando usuarios...</div>
@@ -275,6 +407,7 @@ export default function UsersPage() {
                 <tr className="border-b border-slate-700 text-left text-sm text-slate-400">
                   <th className="p-3">Nombre</th>
                   <th className="p-3">Correo</th>
+                  <th className="p-3">Teléfono</th>
                   <th className="p-3">Rol</th>
                   <th className="p-3">Estado</th>
                   <th className="p-3">Creado</th>
@@ -298,6 +431,7 @@ export default function UsersPage() {
                         )}
                       </td>
                       <td className="p-3 text-slate-300">{user.email}</td>
+                      <td className="p-3 text-slate-300">{user.phone || "—"}</td>
                       <td className="p-3">
                         <select
                           value={user.role}
@@ -362,12 +496,11 @@ export default function UsersPage() {
         )}
       </section>
 
-      <section className="mt-6 rounded-xl border border-amber-900 bg-amber-950/30 p-5">
-        <h3 className="font-semibold text-amber-300">Alta de usuarios nuevos</h3>
+      <section className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <h3 className="font-semibold text-sky-300">Alta de personal</h3>
         <p className="mt-2 text-sm text-slate-400">
-          Esta pantalla administra perfiles existentes. La creación de una cuenta nueva
-          con contraseña requiere crear primero la cuenta en Supabase Authentication y
-          después registrar su perfil en AppUser.
+          Usa Agregar usuario: nombre, correo, teléfono y puesto (privilegios). Si
+          Authentication no está conectado, el alta queda en esta sesión para la demo.
         </p>
       </section>
       </div>

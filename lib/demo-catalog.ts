@@ -19,6 +19,6 @@ export function demoProducts(): DemoProduct[] {
   return (catalog as DemoProduct[]).map((product) => ({
     ...product,
     unit: product.unit === "KG" ? "KG" : "PIECE",
-    imageUrl: product.imageUrl || photoForProduct(product.name, product.category),
+    imageUrl: product.imageUrl || photoForProduct(product.name, product.category, product.sku),
   }));
 }

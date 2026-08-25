@@ -358,7 +358,7 @@ export default function InventoryPage() {
         unit: form.unit,
         category: form.category.trim(),
         barcode: form.barcode.trim() || barcodeFromSku(form.sku.trim()),
-        imageUrl: finalImageUrl || photoForProduct(form.name, form.category),
+        imageUrl: finalImageUrl || photoForProduct(form.name, form.category, form.sku),
         updatedAt: now,
       };
 
@@ -600,6 +600,7 @@ export default function InventoryPage() {
                           name={product.name}
                           category={product.category}
                           imageUrl={product.imageUrl}
+                          sku={product.sku}
                           compact
                         />
                       </td>
