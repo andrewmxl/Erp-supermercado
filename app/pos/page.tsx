@@ -19,6 +19,7 @@ import {
   type ShippingId,
 } from "@/lib/store-info";
 import { canUsePOS } from "@/lib/erp";
+import { saveLocalSale } from "@/lib/local-ledger";
 
 type Product = {
   id: string;
@@ -598,14 +599,13 @@ export default function PosPage() {
         : "Gracias por tu compra");
 
     try {
-      const raw = window.localStorage.getItem("erp_pos_sales");
-      const previous = raw ? (JSON.parse(raw) as Array<{ totalAmount: number; createdAt: string }>) : [];
-      window.localStorage.setItem(
-        "erp_pos_sales",
-        JSON.stringify(
-          [{ totalAmount: soldTotal, createdAt }, ...previous].slice(0, 200)
-        )
-      );
+      saveLocalSale({
+        id: saleId,
+        folio,
+        totalAmount: soldTotal,
+        createdAt,
+        cashRegister: 1,
+      });
     } catch {
       // El ticket se emite igual si el almacenamiento local falla.
     }

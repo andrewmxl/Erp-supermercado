@@ -4,65 +4,79 @@ import { useEffect, useMemo, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
 import { isAdmin, money, startOfDay, startOfMonth, startOfWeek } from "@/lib/erp";
+import {
+  loadLocalExpenses,
+  loadLocalSales,
+  mergeSales,
+  type LocalExpense,
+  type LocalSale,
+} from "@/lib/local-ledger";
 import { createClient } from "@/utils/supabase/client";
-
-type Sale = {
-  id: string;
-  totalAmount: number;
-  createdAt: string;
-  cashRegister: number;
-};
-
-type Expense = {
-  amount: number;
-  expenseDate: string;
-};
 
 export default function FinancePage() {
   const { checking, profile } = useErpSession({ adminOnly: true });
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [sales, setSales] = useState<LocalSale[]>([]);
+  const [expenses, setExpenses] = useState<LocalExpense[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadFinance() {
-    setLoading(true);
+    const localSales = loadLocalSales();
+    const localExpenses = loadLocalExpenses();
+    setSales(localSales);
+    setExpenses(localExpenses);
+    setRefreshing(true);
     setErrorMessage("");
-    const supabase = createClient();
 
-    const [salesResult, expensesResult] = await Promise.all([
-      supabase
-        .from("Sale")
-        .select("id, totalAmount, createdAt, cashRegister")
-        .order("createdAt", { ascending: false }),
-      supabase.from("Expense").select("amount, expenseDate"),
-    ]);
+    try {
+      const supabase = createClient();
+      const query = Promise.all([
+        supabase
+          .from("Sale")
+          .select("id, totalAmount, createdAt, cashRegister")
+          .order("createdAt", { ascending: false }),
+        supabase.from("Expense").select("id, amount, expenseDate"),
+      ]);
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("timeout")), 4000);
+      });
+      const [salesResult, expensesResult] = await Promise.race([query, timeout]);
 
-    if (salesResult.error) {
-      setErrorMessage(`No se pudieron cargar las ventas: ${salesResult.error.message}`);
-      setLoading(false);
-      return;
+      if (!salesResult.error && salesResult.data?.length) {
+        setSales(
+          mergeSales(
+            localSales,
+            salesResult.data.map((sale) => ({
+              id: sale.id,
+              totalAmount: Number(sale.totalAmount ?? 0),
+              createdAt: sale.createdAt ?? "",
+              cashRegister: Number(sale.cashRegister ?? 1),
+            }))
+          )
+        );
+      }
+
+      if (!expensesResult.error && expensesResult.data?.length) {
+        const remote = expensesResult.data.map((expense) => ({
+          id: expense.id,
+          amount: Number(expense.amount ?? 0),
+          expenseDate: expense.expenseDate ?? "",
+        }));
+        const seen = new Set(localExpenses.map((item) => item.id));
+        setExpenses([
+          ...localExpenses,
+          ...remote.filter((item) => !seen.has(item.id)),
+        ]);
+      }
+    } catch {
+      if (localSales.length === 0) {
+        setErrorMessage(
+          "No hay conexión con la base, pero las ventas de esta caja se muestran si cobraste en este navegador."
+        );
+      }
+    } finally {
+      setRefreshing(false);
     }
-
-    if (expensesResult.error) {
-      setErrorMessage(`No se pudieron cargar los gastos: ${expensesResult.error.message}`);
-    }
-
-    setSales(
-      (salesResult.data ?? []).map((sale) => ({
-        id: sale.id,
-        totalAmount: Number(sale.totalAmount ?? 0),
-        createdAt: sale.createdAt ?? "",
-        cashRegister: Number(sale.cashRegister ?? 1),
-      }))
-    );
-    setExpenses(
-      (expensesResult.data ?? []).map((expense) => ({
-        amount: Number(expense.amount ?? 0),
-        expenseDate: expense.expenseDate ?? "",
-      }))
-    );
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -118,10 +132,10 @@ export default function FinancePage() {
           <button
             type="button"
             onClick={() => void loadFinance()}
-            disabled={loading}
+            disabled={refreshing}
             className="rounded-lg bg-emerald-700 px-4 py-2 font-semibold hover:bg-emerald-600 disabled:opacity-50"
           >
-            {loading ? "Actualizando..." : "Actualizar"}
+            {refreshing ? "Actualizando..." : "Actualizar"}
           </button>
         </div>
 
@@ -142,10 +156,10 @@ export default function FinancePage() {
 
         <section className="mt-7 rounded-xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-xl font-bold">Últimas ventas</h2>
-          {loading ? (
-            <p className="mt-4 text-slate-400">Cargando...</p>
-          ) : sales.length === 0 ? (
-            <p className="mt-4 text-slate-400">Aún no hay ventas.</p>
+          {sales.length === 0 ? (
+            <p className="mt-4 text-slate-400">
+              Aún no hay ventas en esta caja. Cobra en Comprar / Punto de venta y vuelve aquí.
+            </p>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[700px]">

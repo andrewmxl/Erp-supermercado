@@ -4,17 +4,17 @@ import { FormEvent, useEffect, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
 import { isAdmin, money } from "@/lib/erp";
+import {
+  loadLocalExpenses,
+  removeLocalExpense,
+  saveLocalExpense,
+  type LocalExpense,
+} from "@/lib/local-ledger";
 import { createClient } from "@/utils/supabase/client";
-
-type Expense = {
-  id: string;
-  amount: number;
-  expenseDate: string;
-};
 
 export default function ExpensesPage() {
   const { checking, profile } = useErpSession({ adminOnly: true });
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<LocalExpense[]>([]);
   const [amount, setAmount] = useState("");
   const [expenseDate, setExpenseDate] = useState(
     new Date().toISOString().slice(0, 10)
@@ -24,24 +24,34 @@ export default function ExpensesPage() {
   const [successMessage, setSuccessMessage] = useState("");
 
   async function loadExpenses() {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("Expense")
-      .select("id, amount, expenseDate")
-      .order("expenseDate", { ascending: false });
+    const local = loadLocalExpenses();
+    setExpenses(local);
 
-    if (error) {
-      setErrorMessage(`No se pudieron cargar los gastos: ${error.message}`);
-      return;
+    try {
+      const supabase = createClient();
+      const query = supabase
+        .from("Expense")
+        .select("id, amount, expenseDate")
+        .order("expenseDate", { ascending: false });
+      const timeout = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("timeout")), 4000);
+      });
+      const { data, error } = await Promise.race([query, timeout]);
+      if (error || !data?.length) return;
+      const seen = new Set(local.map((item) => item.id));
+      setExpenses([
+        ...local,
+        ...data
+          .map((expense) => ({
+            id: expense.id,
+            amount: Number(expense.amount ?? 0),
+            expenseDate: expense.expenseDate ?? "",
+          }))
+          .filter((item) => !seen.has(item.id)),
+      ]);
+    } catch {
+      // Keep local expenses if Supabase hangs.
     }
-
-    setExpenses(
-      (data ?? []).map((expense) => ({
-        id: expense.id,
-        amount: Number(expense.amount ?? 0),
-        expenseDate: expense.expenseDate ?? "",
-      }))
-    );
   }
 
   useEffect(() => {
@@ -63,38 +73,45 @@ export default function ExpensesPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const supabase = createClient();
-    const { error } = await supabase.from("Expense").insert({
+    const expense = {
       id: crypto.randomUUID(),
       amount: Number(parsed.toFixed(2)),
       expenseDate: new Date(`${expenseDate}T12:00:00`).toISOString(),
-    });
-
-    if (error) {
-      setErrorMessage(`No se pudo guardar el gasto: ${error.message}`);
-      setSaving(false);
-      return;
-    }
-
+    };
+    saveLocalExpense(expense);
+    setExpenses((current) => [expense, ...current]);
     setAmount("");
     setSuccessMessage("Gasto registrado.");
-    await loadExpenses();
+
+    try {
+      const supabase = createClient();
+      await Promise.race([
+        supabase.from("Expense").insert(expense),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 4000)),
+      ]);
+    } catch {
+      // Local save already succeeded.
+    }
+
     setSaving(false);
   }
 
-  async function deleteExpense(expense: Expense) {
+  async function deleteExpense(expense: LocalExpense) {
     const confirmed = window.confirm("¿Eliminar este gasto?");
     if (!confirmed) return;
 
-    const supabase = createClient();
-    const { error } = await supabase.from("Expense").delete().eq("id", expense.id);
+    removeLocalExpense(expense.id);
+    setExpenses((current) => current.filter((item) => item.id !== expense.id));
 
-    if (error) {
-      setErrorMessage(`No se pudo eliminar: ${error.message}`);
-      return;
+    try {
+      const supabase = createClient();
+      await Promise.race([
+        supabase.from("Expense").delete().eq("id", expense.id),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 4000)),
+      ]);
+    } catch {
+      // Removed locally.
     }
-
-    await loadExpenses();
   }
 
   if (checking || !profile) {
