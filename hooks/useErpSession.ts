@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   canManageUsers,
   DEMO_ROLE_KEY,
+  normalizeRole,
   profileForDemoRole,
   type ErpProfile,
 } from "@/lib/erp";
@@ -54,7 +55,7 @@ export function useErpSession(options?: { adminOnly?: boolean }) {
                   id: data.id,
                   name: data.name ?? "",
                   email: (data.email ?? user.email).toLowerCase(),
-                  role: data.role ?? "Cajero",
+                  role: normalizeRole(data.role ?? "Cajero"),
                   active: Boolean(data.active),
                 });
                 setChecking(false);
@@ -67,7 +68,7 @@ export function useErpSession(options?: { adminOnly?: boolean }) {
                 id: data.id,
                 name: data.name ?? "",
                 email: (data.email ?? user.email).toLowerCase(),
-                role: data.role ?? "Cajero",
+                role: normalizeRole(data.role ?? "Cajero"),
                 active: Boolean(data.active),
               });
               setChecking(false);

@@ -81,6 +81,70 @@ function formatQuantity(quantity: number, unit: "PIECE" | "KG") {
   return String(Number(quantity.toFixed(3)));
 }
 
+function receiptHtml(receipt: SaleReceipt) {
+  const rows = receipt.items
+    .map(
+      (item) =>
+        `<tr><td>${item.name}</td><td>${item.quantity}</td><td>$${(item.price * item.quantity).toFixed(2)}</td></tr>`
+    )
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Ticket ${receipt.folio}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; color: #111; max-width: 420px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 0; border-bottom: 1px solid #ddd; text-align: left; }
+    .total { font-size: 20px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>${STORE_NAME}</h1>
+  <p>${STORE_ADDRESS}<br/>Tel. ${STORE_PHONE} · RFC ${STORE_RFC}</p>
+  <p><strong>Folio ${receipt.folio}</strong><br/>${receipt.dateLabel}<br/>${receipt.cashier}</p>
+  <table>
+    <thead><tr><th>Producto</th><th>Cant.</th><th>Importe</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <p>Subtotal: $${receipt.subtotal.toFixed(2)}</p>
+  ${receipt.shipping > 0 ? `<p>Envío: $${receipt.shipping.toFixed(2)}</p>` : ""}
+  ${receipt.donation > 0 ? `<p>Donativo: $${receipt.donation.toFixed(2)}</p>` : ""}
+  ${receipt.tip > 0 ? `<p>Propina: $${receipt.tip.toFixed(2)}</p>` : ""}
+  <p class="total">Total: $${receipt.total.toFixed(2)}</p>
+  <p>Pago: ${receipt.payment}</p>
+  ${receipt.change > 0 ? `<p>Cambio: $${receipt.change.toFixed(2)}</p>` : ""}
+  <p><strong>${receipt.gift}</strong><br/>${receipt.coupon}</p>
+</body>
+</html>`;
+}
+
+function saveReceiptFile(receipt: SaleReceipt) {
+  const blob = new Blob([receiptHtml(receipt)], {
+    type: "text/html;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `ticket-${receipt.folio}.html`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function printReceiptFile(receipt: SaleReceipt) {
+  const popup = window.open("", "_blank", "width=480,height=720");
+  if (!popup) {
+    saveReceiptFile(receipt);
+    return;
+  }
+  popup.document.write(receiptHtml(receipt));
+  popup.document.close();
+  popup.focus();
+  popup.print();
+}
+
 export default function PosPage() {
   const { checking, profile } = useErpSession();
   const [products, setProducts] = useState<Product[]>([]);
@@ -624,83 +688,20 @@ export default function PosPage() {
         </div>
       )}
 
-      {receipt && (
-        <section className="mb-5 rounded-xl border border-emerald-800 bg-white p-5 text-slate-900">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-emerald-800">
-                Ticket de compra
-              </p>
-              <h2 className="text-2xl font-bold">{STORE_NAME}</h2>
-              <p className="text-sm text-slate-600">{STORE_ADDRESS}</p>
-              <p className="text-sm text-slate-600">
-                Tel. {STORE_PHONE} · RFC {STORE_RFC}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="font-mono text-lg font-bold">Folio {receipt.folio}</p>
-              <p className="text-sm text-slate-600">{receipt.dateLabel}</p>
-              <p className="text-sm text-slate-600">{receipt.cashier}</p>
-            </div>
-          </div>
-          <table className="mt-4 w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-slate-500">
-                <th className="py-2">Producto</th>
-                <th className="py-2">Cant.</th>
-                <th className="py-2 text-right">Importe</th>
-              </tr>
-            </thead>
-            <tbody>
-              {receipt.items.map((item, index) => (
-                <tr key={`${item.name}-${index}`} className="border-b border-slate-100">
-                  <td className="py-2">{item.name}</td>
-                  <td className="py-2">{item.quantity}</td>
-                  <td className="py-2 text-right">
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="mt-4 space-y-1 text-sm">
-            <p>Subtotal: ${receipt.subtotal.toFixed(2)}</p>
-            {receipt.shipping > 0 && <p>Envío: ${receipt.shipping.toFixed(2)}</p>}
-            {receipt.donation > 0 && (
-              <p>
-                Donativo {CHARITY_NAME}: ${receipt.donation.toFixed(2)}
-              </p>
-            )}
-            {receipt.tip > 0 && <p>Propina: ${receipt.tip.toFixed(2)}</p>}
-            <p className="text-lg font-bold">Total: ${receipt.total.toFixed(2)}</p>
-            <p>Pago: {receipt.payment}</p>
-            {receipt.change > 0 && <p>Cambio: ${receipt.change.toFixed(2)}</p>}
-            <p className="pt-2 font-semibold">{receipt.gift}</p>
-            <p>{receipt.coupon}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="mt-4 rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-          >
-            Imprimir / mostrar al cliente
-          </button>
-        </section>
-      )}
-
       {askRating && (
-        <div className="mb-5 rounded-xl border border-amber-800 bg-slate-900 p-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+        <div className="w-full max-w-lg rounded-xl border border-amber-800 bg-slate-900 p-5">
           <p className="font-semibold text-amber-200">
-            Califica esta visita (opcional)
+            Califica esta visita
           </p>
           <p className="mt-1 text-sm text-slate-400">
-            Compra, sucursal y cajero. Puedes omitir.
+            Compra, sucursal y personal. Luego te mostramos el recibo para guardarlo o imprimirlo.
           </p>
           {(
             [
               ["Compra", purchaseRating, setPurchaseRating],
               ["Sucursal", storeRating, setStoreRating],
-              ["Cajero", cashierRating, setCashierRating],
+              ["Personal", cashierRating, setCashierRating],
             ] as const
           ).map(([label, value, setter]) => (
             <div key={label} className="mt-3 flex flex-wrap items-center gap-2">
@@ -760,6 +761,103 @@ export default function PosPage() {
               Omitir
             </button>
           </div>
+        </div>
+        </div>
+      )}
+
+      {!askRating && receipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <section className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-xl border border-emerald-800 bg-white p-5 text-slate-900">
+            <button
+              type="button"
+              onClick={() => setReceipt(null)}
+              className="absolute right-3 top-3 rounded-full bg-slate-800 px-3 py-1 text-lg font-bold text-white hover:bg-slate-700"
+              aria-label="Cerrar recibo"
+            >
+              ×
+            </button>
+            <div className="flex flex-wrap items-start justify-between gap-3 pr-10">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-emerald-800">
+                  Ticket de compra
+                </p>
+                <h2 className="text-2xl font-bold">{STORE_NAME}</h2>
+                <p className="text-sm text-slate-600">{STORE_ADDRESS}</p>
+                <p className="text-sm text-slate-600">
+                  Tel. {STORE_PHONE} · RFC {STORE_RFC}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-mono text-lg font-bold">Folio {receipt.folio}</p>
+                <p className="text-sm text-slate-600">{receipt.dateLabel}</p>
+                <p className="text-sm text-slate-600">{receipt.cashier}</p>
+              </div>
+            </div>
+            <table className="mt-4 w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-slate-500">
+                  <th className="py-2">Producto</th>
+                  <th className="py-2">Cant.</th>
+                  <th className="py-2 text-right">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipt.items.map((item, index) => (
+                  <tr key={`${item.name}-${index}`} className="border-b border-slate-100">
+                    <td className="py-2">{item.name}</td>
+                    <td className="py-2">{item.quantity}</td>
+                    <td className="py-2 text-right">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-4 space-y-1 text-sm">
+              <p>Subtotal: ${receipt.subtotal.toFixed(2)}</p>
+              {receipt.shipping > 0 && <p>Envío: ${receipt.shipping.toFixed(2)}</p>}
+              {receipt.donation > 0 && (
+                <p>
+                  Donativo {CHARITY_NAME}: ${receipt.donation.toFixed(2)}
+                </p>
+              )}
+              {receipt.tip > 0 && <p>Propina: ${receipt.tip.toFixed(2)}</p>}
+              <p className="text-lg font-bold">Total: ${receipt.total.toFixed(2)}</p>
+              <p>Pago: {receipt.payment}</p>
+              {receipt.change > 0 && <p>Cambio: ${receipt.change.toFixed(2)}</p>}
+              <p className="pt-2 font-semibold">{receipt.gift}</p>
+              <p>{receipt.coupon}</p>
+            </div>
+            <p className="mt-4 text-sm text-slate-600">
+              ¿Quieres guardar el ticket, imprimirlo, o ambos?
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => saveReceiptFile(receipt)}
+                className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Guardar ticket
+              </button>
+              <button
+                type="button"
+                onClick={() => printReceiptFile(receipt)}
+                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+              >
+                Imprimir
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  saveReceiptFile(receipt);
+                  printReceiptFile(receipt);
+                }}
+                className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+              >
+                Guardar e imprimir
+              </button>
+            </div>
+          </section>
         </div>
       )}
 

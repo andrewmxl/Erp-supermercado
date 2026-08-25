@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import {
   DEMO_ROLE_KEY,
   navLinksForRole,
+  normalizeRole,
   STAFF_ROLES,
   type ErpProfile,
 } from "@/lib/erp";
@@ -38,7 +39,7 @@ export function AppHeader({ profile }: { profile: ErpProfile }) {
   }
 
   async function switchRole(role: string) {
-    if (role === profile.role) return;
+    if (normalizeRole(role) === normalizeRole(profile.role)) return;
     window.localStorage.setItem(DEMO_ROLE_KEY, role);
     await clearSupabaseSession();
     window.location.assign(role === "Cliente" ? "/pos" : "/");
@@ -61,8 +62,10 @@ export function AppHeader({ profile }: { profile: ErpProfile }) {
             <span className="text-slate-400">Perfil</span>
             <select
               value={
-                SWITCH_ROLES.includes(profile.role as (typeof SWITCH_ROLES)[number])
-                  ? profile.role
+                SWITCH_ROLES.includes(
+                  normalizeRole(profile.role) as (typeof SWITCH_ROLES)[number]
+                )
+                  ? normalizeRole(profile.role)
                   : "Gerente"
               }
               onChange={(event) => {

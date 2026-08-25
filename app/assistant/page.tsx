@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
-import { canAskBusinessData, STAFF_ROLES } from "@/lib/erp";
+import { canAskBusinessData, isClient, normalizeRole, STAFF_ROLES } from "@/lib/erp";
 
 type ChatMessage = {
   id: string;
@@ -25,8 +25,6 @@ export default function AssistantPage() {
   const { checking, profile } = useErpSession();
   const [visitorKind, setVisitorKind] = useState<"cliente" | "personal" | "">("");
   const [staffRole, setStaffRole] = useState<(typeof STAFF_ROLES)[number]>("Cajero");
-  const [phone, setPhone] = useState("");
-  const [connectedPhone, setConnectedPhone] = useState("");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -34,53 +32,26 @@ export default function AssistantPage() {
     {
       id: "welcome",
       sender: "asistente",
-      text: "Hola. Si eres cliente, pregunta precio, existencia u horario. Si eres personal, elige tu puesto: el sistema no da acceso de gerente solo por escribir un número.",
+      text: "Hola. Ya estás en el chat de la tienda. Pregunta precio, existencia u horario.",
     },
   ]);
 
-  const staffChat = visitorKind === "personal" && Boolean(connectedPhone);
-  const isAdminChat = staffChat && canAskBusinessData(staffRole);
+  const staffChat = Boolean(profile) && !isClient(profile?.role);
+  const isAdminChat = staffChat && canAskBusinessData(profile?.role);
 
   useEffect(() => {
-    if (profile?.role === "Cliente") {
+    if (!profile) return;
+    const role = normalizeRole(profile.role);
+    if (role === "Cliente") {
       setVisitorKind("cliente");
-    }
-  }, [profile?.role]);
-
-  function connectPhone() {
-    const value = phone.replace(/\s+/g, "").trim();
-    if (value.length < 8) {
-      setErrorMessage("Escribe un número de WhatsApp válido.");
       return;
     }
-
-    setErrorMessage("");
-    setConnectedPhone(value);
-    setMessages((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        sender: "asistente",
-        text: `Número ${value} conectado como ${staffRole}. ${
-          canAskBusinessData(staffRole)
-            ? "Puedes consultar ventas e inventario interno."
-            : "Este puesto no ve finanzas. Pregunta existencias o soporte; las cifras de ventas quedan para gerente y supervisor."
-        }`,
-      },
-    ]);
-  }
-
-  function disconnectPhone() {
-    setConnectedPhone("");
-    setMessages((current) => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
-        sender: "asistente",
-        text: "Saliste del modo administrador. Este chat queda como cliente: pregunta por productos, precios u horario.",
-      },
-    ]);
-  }
+    const staff = STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number])
+      ? (role as (typeof STAFF_ROLES)[number])
+      : "Gerente";
+    setVisitorKind("personal");
+    setStaffRole(staff);
+  }, [profile]);
 
   async function sendMessage() {
     const finalQuestion = input.trim();
@@ -152,96 +123,19 @@ export default function AssistantPage() {
         <AppHeader profile={profile} />
         <h1 className="text-3xl font-bold text-emerald-400">WhatsApp</h1>
         <p className="mt-2 text-slate-400">
-          Primero elige si eres cliente o personal. Un número de teléfono no abre
-          finanzas: eso depende del puesto.
+          Ya entras con tu perfil de la tienda. Escribe abajo; no hace falta volver a identificarte.
         </p>
 
         <section className="mt-5 rounded-xl border border-slate-800 bg-slate-900 p-4">
-          {!connectedPhone ? (
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setVisitorKind("cliente")}
-                  className={`rounded-lg px-4 py-2 font-semibold ${
-                    visitorKind === "cliente"
-                      ? "bg-amber-700 text-white"
-                      : "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                  }`}
-                >
-                  Soy cliente
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVisitorKind("personal")}
-                  className={`rounded-lg px-4 py-2 font-semibold ${
-                    visitorKind === "personal"
-                      ? "bg-emerald-700 text-white"
-                      : "bg-slate-800 text-slate-200 hover:bg-slate-700"
-                  }`}
-                >
-                  Soy personal
-                </button>
-              </div>
-
-              {visitorKind === "personal" && (
-                <label className="block text-sm text-slate-400">
-                  Puesto
-                  <select
-                    value={staffRole}
-                    onChange={(event) =>
-                      setStaffRole(event.target.value as (typeof STAFF_ROLES)[number])
-                    }
-                    className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-slate-100"
-                  >
-                    {STAFF_ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-
-              {visitorKind === "personal" && (
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <input
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    placeholder="Número de personal, ej. 6861234567"
-                    className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-emerald-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={connectPhone}
-                    className="rounded-lg bg-emerald-700 px-4 py-3 font-semibold hover:bg-emerald-600"
-                  >
-                    Identificarme
-                  </button>
-                </div>
-              )}
-
-              {visitorKind === "cliente" && (
-                <p className="text-sm text-emerald-200/80">
-                  Ya puedes escribir abajo. El asistente no comparte ventas ni lista de
-                  empleados.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-emerald-300">
-                Conectado como {staffRole} · {connectedPhone}
-              </p>
-              <button
-                type="button"
-                onClick={disconnectPhone}
-                className="rounded-lg bg-slate-700 px-4 py-2 text-sm hover:bg-slate-600"
-              >
-                Salir de personal
-              </button>
-            </div>
-          )}
+          <p className="text-sm text-emerald-300">
+            {isClient(profile.role)
+              ? `Sesión de cliente · ${profile.name}. Pregunta precio, existencia u horario.`
+              : `Sesión de ${profile.role} · ${profile.name}. ${
+                  isAdminChat
+                    ? "Puedes consultar datos internos del negocio."
+                    : "Este puesto no ve finanzas."
+                }`}
+          </p>
         </section>
 
         {isAdminChat && (

@@ -7,6 +7,38 @@ export type ErpRole =
   | "Cliente"
   | string;
 
+function foldRole(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+/** Unifies DB/demo labels so Gerente is not treated as a guest. */
+export function normalizeRole(role: string | undefined | null): ErpRole {
+  const folded = foldRole(role ?? "");
+  if (!folded) return "Gerente";
+  if (["cliente", "client", "customer"].includes(folded)) return "Cliente";
+  if (["cajero", "cashier", "caja"].includes(folded)) return "Cajero";
+  if (["supervisor", "piso"].includes(folded)) return "Supervisor";
+  if (["tecnico", "tech", "sistemas"].includes(folded)) return "Tecnico";
+  if (
+    [
+      "gerente",
+      "administrador",
+      "admin",
+      "dueño",
+      "dueno",
+      "owner",
+      "manager",
+    ].includes(folded)
+  ) {
+    return "Gerente";
+  }
+  return role!.trim();
+}
+
 export type ErpProfile = {
   id: string;
   name: string;
@@ -57,19 +89,20 @@ export function startOfMonth(date: Date) {
 
 /** Dueño / gerente: finanzas, usuarios, alta de productos, buzón. */
 export function isAdmin(role: string | undefined) {
-  return role === "Administrador" || role === "Gerente";
+  const normalized = normalizeRole(role);
+  return normalized === "Administrador" || normalized === "Gerente";
 }
 
 export function isCashier(role: string | undefined) {
-  return role === "Cajero";
+  return normalizeRole(role) === "Cajero";
 }
 
 export function isClient(role: string | undefined) {
-  return role === "Cliente";
+  return normalizeRole(role) === "Cliente";
 }
 
 export function isStaff(role: string | undefined) {
-  return Boolean(role) && role !== "Cliente";
+  return !isClient(role);
 }
 
 export function canSeeFinance(role: string | undefined) {
@@ -81,23 +114,33 @@ export function canManageUsers(role: string | undefined) {
 }
 
 export function canSeeMailbox(role: string | undefined) {
-  return isAdmin(role) || role === "Supervisor";
+  return isAdmin(role) || normalizeRole(role) === "Supervisor";
 }
 
 export function canEditInventory(role: string | undefined) {
-  return isAdmin(role) || role === "Supervisor";
+  return isAdmin(role) || normalizeRole(role) === "Supervisor";
 }
 
-export function canViewInventory(role: string | undefined) {
+export function canViewInventory(_role?: string) {
+  return true;
+}
+
+export function canSeeBuyPrice(role: string | undefined) {
   return isStaff(role);
 }
 
 export function canUsePOS(role: string | undefined) {
-  return isAdmin(role) || role === "Supervisor" || role === "Cajero" || role === "Cliente";
+  const normalized = normalizeRole(role);
+  return (
+    isAdmin(normalized) ||
+    normalized === "Supervisor" ||
+    normalized === "Cajero" ||
+    normalized === "Cliente"
+  );
 }
 
 export function canAskBusinessData(role: string | undefined) {
-  return isAdmin(role) || role === "Supervisor";
+  return isAdmin(role) || normalizeRole(role) === "Supervisor";
 }
 
 export const CASHIER_REVIEW_PROFILE: ErpProfile = {
@@ -135,7 +178,7 @@ export const CLIENT_REVIEW_PROFILE: ErpProfile = {
 export const DEMO_ROLE_KEY = "erp_demo_role";
 
 export function profileForDemoRole(role: string | null): ErpProfile {
-  switch (role) {
+  switch (normalizeRole(role ?? "Gerente")) {
     case "Cajero":
       return CASHIER_REVIEW_PROFILE;
     case "Supervisor":
@@ -153,7 +196,11 @@ export function navLinksForRole(role: string | undefined) {
   const all = [
     { href: "/", label: "Panel", show: true },
     { href: "/pos", label: isClient(role) ? "Comprar" : "Punto de venta", show: canUsePOS(role) },
-    { href: "/inventory", label: "Inventario", show: canViewInventory(role) },
+    {
+      href: "/inventory",
+      label: isClient(role) ? "Catálogo" : "Inventario",
+      show: canViewInventory(role),
+    },
     { href: "/finance", label: "Finanzas", show: canSeeFinance(role) },
     { href: "/finance/expenses", label: "Gastos", show: canSeeFinance(role) },
     { href: "/assistant", label: "WhatsApp", show: true },

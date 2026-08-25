@@ -6,7 +6,7 @@ import { BarcodeMark } from "@/components/BarcodeMark";
 import { ProductShot } from "@/components/ProductShot";
 import { useErpSession } from "@/hooks/useErpSession";
 import { barcodeFromSku } from "@/lib/barcode";
-import { canEditInventory, canViewInventory } from "@/lib/erp";
+import { canEditInventory, canSeeBuyPrice, isCashier, isClient } from "@/lib/erp";
 import { photoForProduct } from "@/lib/product-media";
 import { demoProducts } from "@/lib/demo-catalog";
 import { createClient } from "@/utils/supabase/client";
@@ -497,25 +497,26 @@ export default function InventoryPage() {
   }
 
   const canEdit = canEditInventory(profile.role);
-
-  if (!canViewInventory(profile.role)) {
-    return <SessionScreen message="El inventario es solo para personal de tienda." />;
-  }
+  const showCost = canSeeBuyPrice(profile.role);
+  const clientView = isClient(profile.role);
 
   return (
     <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
       <div className="mx-auto max-w-7xl">
       <AppHeader profile={profile} />
       <header className="mb-6">
-        <h1 className="text-3xl font-bold text-amber-200">Inventario</h1>
+        <h1 className="text-3xl font-bold text-amber-200">
+          {clientView ? "Catálogo" : "Inventario"}
+        </h1>
         <p className="mt-1 text-slate-400">
-          Consulta el catálogo. Solo el administrador da de alta productos, más abajo.
+          {clientView
+            ? "Consulta productos, fotos, código de barras y precio de venta."
+            : canEdit
+              ? "Gerente y supervisor pueden editar. El alta de productos está más abajo."
+              : isCashier(profile.role)
+                ? "Cajero: consulta existencias y precios. No puedes agregar ni borrar."
+                : "Consulta existencias. Este puesto no edita el catálogo."}
         </p>
-        {!canEdit ? (
-          <p className="mt-2 text-sm text-emerald-200/80">
-            Entraste como cajero: puedes buscar y ver. No puedes agregar ni borrar.
-          </p>
-        ) : null}
       </header>
 
       {successMessage && (
@@ -578,7 +579,7 @@ export default function InventoryPage() {
                   <th className="p-3">SKU</th>
                   <th className="p-3">Código de barras</th>
                   <th className="p-3">Categoría</th>
-                  <th className="p-3">Compra</th>
+                  {showCost ? <th className="p-3">Compra</th> : null}
                   <th className="p-3">Venta</th>
                   <th className="p-3">Stock</th>
                   <th className="p-3">Mínimo</th>
@@ -626,9 +627,11 @@ export default function InventoryPage() {
                         {product.category || "—"}
                       </td>
 
+                      {showCost ? (
                       <td className="p-3">
                         ${product.buyPrice.toFixed(2)}
                       </td>
+                      ) : null}
 
                       <td className="p-3 font-semibold text-emerald-400">
                         ${product.sellPrice.toFixed(2)}
@@ -722,6 +725,7 @@ export default function InventoryPage() {
           </p>
         </div>
 
+        {showCost ? (
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
           <p className="text-sm text-slate-400">
             Valor del inventario a costo
@@ -731,6 +735,16 @@ export default function InventoryPage() {
             ${inventoryValue.toFixed(2)}
           </p>
         </div>
+        ) : (
+        <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <p className="text-sm text-slate-400">
+            Productos a la venta
+          </p>
+          <p className="mt-2 text-3xl font-bold text-emerald-400">
+            {products.filter((item) => item.stock > 0).length}
+          </p>
+        </div>
+        )}
       </section>
 
       {canEdit && (
