@@ -382,9 +382,12 @@ const SKU_PHOTO: Record<string, string> = {
 };
 
 export function photoForProduct(name: string, category = "", sku = "") {
+  if (sku) {
+    return `/products/${encodeURIComponent(sku)}.svg`;
+  }
   const params = new URLSearchParams({
     name: name || "Producto",
-    sku: sku || category || "",
+    sku: category || "",
   });
   return `/api/product-photo?${params.toString()}`;
 }

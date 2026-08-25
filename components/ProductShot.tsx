@@ -1,6 +1,6 @@
 "use client";
 
-import { barcodeSrc, productIcon, productSwatch } from "@/lib/product-media";
+import { barcodeSrc } from "@/lib/product-media";
 
 export function ProductShot({
   name,
@@ -21,29 +21,22 @@ export function ProductShot({
     imageUrl &&
       (imageUrl.includes("supabase.co/storage") || imageUrl.startsWith("blob:"))
   );
-  const icon = productIcon(name, sku, category);
-  const swatch = productSwatch(name, sku || category);
+  const src = uploaded
+    ? imageUrl
+    : sku
+      ? `/products/${encodeURIComponent(sku)}.svg`
+      : `/products/LAC-001.svg`;
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-300 bg-white">
-      <div
-        className={`flex flex-col items-center justify-center px-2 ${compact ? "h-20 w-20" : "min-h-44 w-full py-4"}`}
-        style={{ background: uploaded ? "#fff" : swatch.background }}
-      >
-        {uploaded ? (
-          <img src={imageUrl} alt={name} className="h-28 w-full object-contain" />
-        ) : (
-          <>
-            <span className={compact ? "text-3xl" : "text-7xl"} aria-hidden>
-              {icon}
-            </span>
-            {!compact ? (
-              <p className="mt-3 max-w-full truncate text-center text-base font-bold text-white drop-shadow">
-                {name}
-              </p>
-            ) : null}
-          </>
-        )}
+      <div className={compact ? "p-1" : "p-2"}>
+        <img
+          src={src}
+          alt={name || category}
+          width={compact ? 96 : 280}
+          height={compact ? 96 : 280}
+          className={compact ? "h-24 w-24 rounded-lg object-cover" : "h-48 w-full rounded-lg object-cover"}
+        />
       </div>
       {barcode ? (
         <div className="border-t border-slate-200 bg-white px-2 py-2">
