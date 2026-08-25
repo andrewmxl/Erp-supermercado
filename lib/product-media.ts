@@ -382,7 +382,11 @@ const SKU_PHOTO: Record<string, string> = {
 };
 
 export function photoForProduct(name: string, category = "", sku = "") {
-  return uniquePhoto(name, sku || fold(category));
+  const params = new URLSearchParams({
+    name: name || "Producto",
+    sku: sku || category || "",
+  });
+  return `/api/product-photo?${params.toString()}`;
 }
 
 export function displayPhoto(
@@ -393,9 +397,9 @@ export function displayPhoto(
 ) {
   const url = (storedUrl ?? "").trim();
   const customUpload =
-    url.startsWith("data:") ||
     url.includes("supabase.co/storage") ||
-    url.startsWith("blob:");
+    url.startsWith("blob:") ||
+    (url.startsWith("data:image/") && !url.includes("svg"));
 
   if (customUpload) {
     return url;
