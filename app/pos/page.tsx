@@ -1179,7 +1179,7 @@ export default function PosPage() {
                     {loyalty.nextMin.toLocaleString("es-MX")} y obtener: {loyalty.nextGift}
                   </p>
                   <p className="mt-1 text-xs text-amber-200/80">
-                    $500 cupón 5% · $2,500 vale $80 · $10,000 despensa $250 + 5% ahora + cupón 15%
+                    $150 cupón 5% · $400 vale $50 · $1,000 despensa $100 + 5% ahora + cupón 15%
                   </p>
                 </>
               ) : null}
