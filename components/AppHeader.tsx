@@ -1,22 +1,47 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { DEMO_ROLE_KEY, navLinksForRole, type ErpProfile } from "@/lib/erp";
+import {
+  DEMO_ROLE_KEY,
+  navLinksForRole,
+  STAFF_ROLES,
+  type ErpProfile,
+} from "@/lib/erp";
 import { STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
+
+const SWITCH_ROLES = ["Cliente", ...STAFF_ROLES] as const;
+
+async function clearSupabaseSession() {
+  try {
+    const supabase = createClient();
+    await Promise.race([
+      supabase.auth.signOut(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 1500)
+      ),
+    ]);
+  } catch {
+    // Demo mode or a hung Supabase call must not block leaving the session.
+  }
+}
 
 export function AppHeader({ profile }: { profile: ErpProfile }) {
   const pathname = usePathname();
-  const router = useRouter();
   const links = navLinksForRole(profile.role);
 
   async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
     window.localStorage.removeItem(DEMO_ROLE_KEY);
-    router.replace("/login");
-    router.refresh();
+    await clearSupabaseSession();
+    window.location.assign("/login");
+  }
+
+  async function switchRole(role: string) {
+    if (role === profile.role) return;
+    window.localStorage.setItem(DEMO_ROLE_KEY, role);
+    await clearSupabaseSession();
+    window.location.assign(role === "Cliente" ? "/pos" : "/");
   }
 
   return (
@@ -31,13 +56,37 @@ export function AppHeader({ profile }: { profile: ErpProfile }) {
             {profile.name} · {profile.role}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={signOut}
-          className="rounded-lg bg-red-900 px-4 py-2 text-sm font-semibold text-red-100 hover:bg-red-800"
-        >
-          Cerrar sesión
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 rounded-lg border border-emerald-800 bg-slate-900 px-3 py-2 text-sm text-slate-200">
+            <span className="text-slate-400">Perfil</span>
+            <select
+              value={
+                SWITCH_ROLES.includes(profile.role as (typeof SWITCH_ROLES)[number])
+                  ? profile.role
+                  : "Gerente"
+              }
+              onChange={(event) => {
+                void switchRole(event.target.value);
+              }}
+              className="rounded-md border border-slate-700 bg-slate-950 px-2 py-1 text-amber-100 outline-none"
+            >
+              {SWITCH_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              void signOut();
+            }}
+            className="rounded-lg bg-red-900 px-4 py-2 text-sm font-semibold text-red-100 hover:bg-red-800"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </div>
 
       <nav className="flex flex-wrap gap-2">

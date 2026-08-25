@@ -381,15 +381,6 @@ const SKU_PHOTO: Record<string, string> = {
   "MAS-003": PHOTO.catLitter,
 };
 
-function isBrokenCatalogUrl(url: string) {
-  return (
-    /\.svg(\?|$)/i.test(url) ||
-    url.includes("/products/") ||
-    url.includes("/api/product-photo") ||
-    url.startsWith("data:image/svg")
-  );
-}
-
 export function remotePhotoUrl(name: string, category = "", sku = "") {
   const code = sku.trim().toUpperCase();
   if (code && SKU_PHOTO[code]) {
@@ -530,16 +521,6 @@ export function displayPhoto(
     (url.startsWith("data:image/") && !url.includes("svg"));
 
   if (customUpload) {
-    return url;
-  }
-
-  if (
-    url &&
-    !isBrokenCatalogUrl(url) &&
-    (url.startsWith("/api/catalog-photo") ||
-      url.includes("unsplash.com/") ||
-      /^https?:\/\//.test(url))
-  ) {
     return url;
   }
 

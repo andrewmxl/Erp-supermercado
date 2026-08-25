@@ -270,5 +270,31 @@ export function answerBusinessQuestion(
 
   return isAdmin
     ? "No entendí. Pregunta por un producto, ventas de hoy, stock bajo o el horario."
-    : "No entendí. Escribe el nombre de un producto, pregunta el precio o el horario de la tienda.";
+    : "No entendí. Escribe el nombre de un producto (por ejemplo leche, manzana o arroz), pregunta el precio o el horario de la tienda.";
+}
+
+export function catalogToAssistantProducts(
+  products: Array<{
+    id: string;
+    name: string;
+    sku: string;
+    sellPrice: number;
+    stock: number;
+    minStock: number;
+    unit: "PIECE" | "KG" | string;
+    category: string;
+    barcode: string;
+  }>
+): AssistantProduct[] {
+  return products.map((product) => ({
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
+    sellPrice: Number(product.sellPrice ?? 0),
+    stock: Number(product.stock ?? 0),
+    minStock: Number(product.minStock ?? 0),
+    unit: product.unit === "KG" ? "KG" : "PIECE",
+    category: product.category ?? "",
+    barcode: product.barcode ?? "",
+  }));
 }

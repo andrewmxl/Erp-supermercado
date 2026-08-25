@@ -1032,31 +1032,31 @@ export default function PosPage() {
             <div>
               <p className="mb-2 text-sm font-semibold text-slate-300">Entrega</p>
               <div className="space-y-2">
-                {SHIPPING_OPTIONS.map((option) => (
-                  <label
-                    key={option.id}
-                    className="flex cursor-pointer items-start gap-2 rounded-lg bg-slate-800 p-3 text-sm"
-                  >
-                    <input
-                      type="radio"
-                      name="shipping"
-                      checked={shippingId === option.id}
-                      onChange={() => setShippingId(option.id)}
+                {SHIPPING_OPTIONS.map((option) => {
+                  const selected = shippingId === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
                       disabled={charging}
-                      className="mt-1"
-                    />
-                    <span>
+                      onClick={() => setShippingId(option.id)}
+                      className={`w-full rounded-lg border p-3 text-left text-sm ${
+                        selected
+                          ? "border-amber-400 bg-amber-900/70 text-amber-50"
+                          : "border-slate-700 bg-slate-800 text-slate-200 hover:border-slate-500"
+                      }`}
+                    >
                       <span className="font-semibold">{option.label}</span>
-                      <span className="text-emerald-400">
+                      <span className={selected ? "text-amber-200" : "text-emerald-400"}>
                         {" "}
                         · {option.cost === 0 ? "Sin costo" : `$${option.cost.toFixed(2)}`}
                       </span>
-                      <span className="mt-1 block text-xs text-slate-400">
+                      <span className="mt-1 block text-xs text-slate-300">
                         {option.detail}
                       </span>
-                    </span>
-                  </label>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
               {shippingId !== "pickup" && (
                 <input

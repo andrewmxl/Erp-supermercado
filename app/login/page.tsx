@@ -105,6 +105,7 @@ export default function LoginPage() {
     }
 
     setPassword("");
+    window.localStorage.removeItem(DEMO_ROLE_KEY);
     router.replace("/");
     router.refresh();
   }

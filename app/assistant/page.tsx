@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
 import { canAskBusinessData, STAFF_ROLES } from "@/lib/erp";
@@ -40,6 +40,12 @@ export default function AssistantPage() {
 
   const staffChat = visitorKind === "personal" && Boolean(connectedPhone);
   const isAdminChat = staffChat && canAskBusinessData(staffRole);
+
+  useEffect(() => {
+    if (profile?.role === "Cliente") {
+      setVisitorKind("cliente");
+    }
+  }, [profile?.role]);
 
   function connectPhone() {
     const value = phone.replace(/\s+/g, "").trim();
@@ -100,7 +106,7 @@ export default function AssistantPage() {
       const payload = (await response.json()) as { reply?: string; error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || "No se pudo obtener respuesta.");
+        throw new Error(payload.error || payload.reply || "No se pudo obtener respuesta.");
       }
 
       setMessages((current) => [
@@ -112,7 +118,20 @@ export default function AssistantPage() {
         },
       ]);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Error al consultar el asistente.");
+      const text =
+        error instanceof Error
+          ? error.message
+          : "Error al consultar el asistente.";
+      setErrorMessage(text);
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          sender: "asistente",
+          text:
+            "Ahora mismo no pude completar la consulta, pero sí te atiendo. Pregunta precio, existencia u horario. Ejemplo: ¿cuánto cuesta la leche?",
+        },
+      ]);
     } finally {
       setSending(false);
     }

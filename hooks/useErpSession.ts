@@ -17,6 +17,19 @@ export function useErpSession(options?: { adminOnly?: boolean }) {
     let cancelled = false;
 
     async function loadSession() {
+      const demoRole =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem(DEMO_ROLE_KEY)
+          : null;
+
+      if (demoRole) {
+        if (!cancelled) {
+          setProfile(profileForDemoRole(demoRole));
+          setChecking(false);
+        }
+        return;
+      }
+
       try {
         const supabase = createClient();
         const userWait = supabase.auth.getUser();
