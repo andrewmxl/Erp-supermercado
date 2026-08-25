@@ -381,15 +381,45 @@ const SKU_PHOTO: Record<string, string> = {
   "MAS-003": PHOTO.catLitter,
 };
 
-export function photoForProduct(name: string, category = "", sku = "") {
-  if (sku) {
-    return `/products/${encodeURIComponent(sku)}.svg`;
+function isBrokenCatalogUrl(url: string) {
+  return (
+    /\.svg(\?|$)/i.test(url) ||
+    url.includes("/products/") ||
+    url.includes("/api/product-photo") ||
+    url.startsWith("data:image/svg")
+  );
+}
+
+export function remotePhotoUrl(name: string, category = "", sku = "") {
+  const code = sku.trim().toUpperCase();
+  if (code && SKU_PHOTO[code]) {
+    return SKU_PHOTO[code];
   }
-  const params = new URLSearchParams({
-    name: name || "Producto",
-    sku: category || "",
-  });
-  return `/api/product-photo?${params.toString()}`;
+
+  const foldedName = fold(name);
+  if (EXACT[foldedName]) {
+    return EXACT[foldedName];
+  }
+
+  for (const [needle, url] of KEYWORDS) {
+    if (foldedName.includes(needle)) {
+      return url;
+    }
+  }
+
+  const foldedCategory = fold(category);
+  if (foldedCategory.includes("fruta") || foldedCategory.includes("verdura")) {
+    return PHOTO.apple;
+  }
+  if (foldedCategory.includes("lact")) return PHOTO.milk;
+  if (foldedCategory.includes("carne")) return PHOTO.chicken;
+  if (foldedCategory.includes("bebida")) return PHOTO.waterBottle;
+
+  return PHOTO.grocery;
+}
+
+export function photoForProduct(name: string, category = "", sku = "") {
+  return remotePhotoUrl(name, category, sku);
 }
 
 export function productIcon(name: string, sku = "", category = "") {
@@ -495,6 +525,14 @@ export function displayPhoto(
     (url.startsWith("data:image/") && !url.includes("svg"));
 
   if (customUpload) {
+    return url;
+  }
+
+  if (
+    url &&
+    !isBrokenCatalogUrl(url) &&
+    (url.startsWith("https://images.unsplash.com/") || /^https?:\/\//.test(url))
+  ) {
     return url;
   }
 
