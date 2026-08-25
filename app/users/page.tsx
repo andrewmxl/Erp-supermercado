@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
-import { isAdmin } from "@/lib/erp";
+import {
+  CASHIER_REVIEW_PROFILE,
+  isAdmin,
+  REVIEW_PROFILE,
+} from "@/lib/erp";
 import { createClient } from "@/utils/supabase/client";
 
 type AppUser = {
@@ -25,41 +29,82 @@ export default function UsersPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const currentUserEmail = profile?.email ?? "";
 
+  function demoUsers(): AppUser[] {
+    return [
+      {
+        id: REVIEW_PROFILE.id,
+        name: REVIEW_PROFILE.name,
+        email: REVIEW_PROFILE.email,
+        role: REVIEW_PROFILE.role,
+        active: REVIEW_PROFILE.active,
+        createdAt: null,
+      },
+      {
+        id: CASHIER_REVIEW_PROFILE.id,
+        name: CASHIER_REVIEW_PROFILE.name,
+        email: CASHIER_REVIEW_PROFILE.email,
+        role: CASHIER_REVIEW_PROFILE.role,
+        active: CASHIER_REVIEW_PROFILE.active,
+        createdAt: null,
+      },
+    ];
+  }
+
   async function loadUsers() {
     setLoading(true);
     setErrorMessage("");
 
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("AppUser")
-      .select("id, name, email, role, active, createdAt")
-      .order("name", { ascending: true });
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 10000);
 
-    if (error) {
-      setErrorMessage(`No se pudieron cargar los usuarios: ${error.message}`);
-      setLoading(false);
-      return;
-    }
+    try {
+      const response = await fetch("/api/users", {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const payload = (await response.json()) as {
+        users?: AppUser[];
+        source?: string;
+        warning?: string;
+      };
 
-    setUsers(
-      (data ?? []).map((user) => ({
+      const mapped = (payload.users ?? []).map((user) => ({
         id: user.id,
         name: user.name ?? "",
         email: user.email ?? "",
         role: user.role ?? "",
         active: Boolean(user.active),
         createdAt: user.createdAt ?? null,
-      }))
-    );
+      }));
 
-    setLoading(false);
+      if (mapped.length > 0) {
+        setUsers(mapped);
+        if (payload.source === "demo" && payload.warning) {
+          setErrorMessage(payload.warning);
+        }
+        return;
+      }
+
+      setUsers(demoUsers());
+      setErrorMessage(
+        "No hay filas en AppUser. Se muestran el revisor y el cajero de demostración."
+      );
+    } catch {
+      setUsers(demoUsers());
+      setErrorMessage(
+        "No se pudo leer AppUser. Se muestran el revisor y el cajero de demostración."
+      );
+    } finally {
+      window.clearTimeout(timer);
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     if (!checking && profile) {
       void loadUsers();
     }
-  }, [checking, profile]);
+  }, [checking, profile?.id]);
 
   const filteredUsers = useMemo(() => {
     const text = search.trim().toLowerCase();
@@ -87,8 +132,6 @@ export default function UsersPage() {
     user: AppUser,
     changes: Partial<Pick<AppUser, "role" | "active">>
   ) {
-    const supabase = createClient();
-
     setSavingId(user.id);
     setErrorMessage("");
     setSuccessMessage("");
@@ -107,13 +150,43 @@ export default function UsersPage() {
       return;
     }
 
-    const { error } = await supabase
-      .from("AppUser")
-      .update({ role: nextRole, active: nextActive })
-      .eq("id", user.id);
+    const isDemoUser =
+      user.email.toLowerCase() === REVIEW_PROFILE.email ||
+      user.email.toLowerCase() === CASHIER_REVIEW_PROFILE.email;
 
-    if (error) {
-      setErrorMessage(`No se pudo actualizar el usuario: ${error.message}`);
+    if (isDemoUser) {
+      setUsers((current) =>
+        current.map((item) =>
+          item.id === user.id
+            ? { ...item, role: nextRole, active: nextActive }
+            : item
+        )
+      );
+      setSuccessMessage(
+        `"${user.name}" se actualizó solo en esta sesión (usuario de demostración).`
+      );
+      setSavingId(null);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("AppUser")
+        .update({ role: nextRole, active: nextActive })
+        .eq("id", user.id);
+
+      if (error) {
+        setErrorMessage(`No se pudo actualizar el usuario: ${error.message}`);
+        setSavingId(null);
+        return;
+      }
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el usuario."
+      );
       setSavingId(null);
       return;
     }

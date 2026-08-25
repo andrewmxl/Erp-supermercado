@@ -52,6 +52,7 @@ export function isCashier(role: string | undefined) {
 
 export const CASHIER_REVIEW_PROFILE: ErpProfile = {
   ...REVIEW_PROFILE,
+  id: "c7a5e011-4b22-4f18-9d6e-2f8a1b0c9e77",
   name: "Cajero de demostración",
   email: "cajero@erp-supermercado.demo",
   role: "Cajero",
