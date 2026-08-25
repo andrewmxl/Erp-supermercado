@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
-import { isAdmin } from "@/lib/erp";
+import { canSeeMailbox } from "@/lib/erp";
 import { averageRating, loadFeedback, type StoreFeedback } from "@/lib/feedback";
 
 export default function FeedbackInboxPage() {
@@ -18,8 +18,8 @@ export default function FeedbackInboxPage() {
     return <SessionScreen message="Verificando sesión..." />;
   }
 
-  if (!isAdmin(profile.role)) {
-    return <SessionScreen message="Solo el administrador puede ver el buzón." />;
+  if (!canSeeMailbox(profile.role)) {
+    return <SessionScreen message="El buzón es solo para gerente y supervisor." />;
   }
 
   const rating = averageRating(items);

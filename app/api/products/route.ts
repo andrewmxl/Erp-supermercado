@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
-import { createDataClient } from "@/utils/supabase/data";
+import { demoProducts } from "@/lib/demo-catalog";
+import { tryCreateDataClient } from "@/utils/supabase/data";
 
 export async function GET() {
+  const fallback = demoProducts();
+
   try {
-    const supabase = createDataClient();
+    const supabase = tryCreateDataClient();
+    if (!supabase) {
+      return NextResponse.json({ products: fallback, source: "demo" });
+    }
+
     const query = supabase
       .from("Product")
       .select(
@@ -18,18 +25,12 @@ export async function GET() {
 
     const { data, error } = await Promise.race([query, timeout]);
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error || !data?.length) {
+      return NextResponse.json({ products: fallback, source: "demo" });
     }
 
-    return NextResponse.json({ products: data ?? [] });
-  } catch (error) {
-    const message =
-      error instanceof Error && error.message === "timeout"
-        ? "Supabase no respondió a tiempo. Revisa URL, clave y que la tabla Product exista."
-        : error instanceof Error
-          ? error.message
-          : "No se pudo leer el inventario.";
-    return NextResponse.json({ error: message }, { status: 504 });
+    return NextResponse.json({ products: data, source: "database" });
+  } catch {
+    return NextResponse.json({ products: fallback, source: "demo" });
   }
 }

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mercado La Estrella — ERP",
+  title: "Supermercado Cachanilla — ERP",
   description: "Punto de venta, inventario, finanzas y asistente de IA",
 };
 

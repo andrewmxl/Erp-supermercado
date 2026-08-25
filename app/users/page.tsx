@@ -7,6 +7,7 @@ import {
   CASHIER_REVIEW_PROFILE,
   isAdmin,
   REVIEW_PROFILE,
+  STAFF_ROLES,
 } from "@/lib/erp";
 import { createClient } from "@/utils/supabase/client";
 
@@ -79,21 +80,12 @@ export default function UsersPage() {
 
       if (mapped.length > 0) {
         setUsers(mapped);
-        if (payload.source === "demo" && payload.warning) {
-          setErrorMessage(payload.warning);
-        }
         return;
       }
 
-      setUsers(demoUsers());
-      setErrorMessage(
-        "No hay filas en AppUser. Se muestran el revisor y el cajero de demostración."
-      );
+        setUsers(demoUsers());
     } catch {
       setUsers(demoUsers());
-      setErrorMessage(
-        "No se pudo leer AppUser. Se muestran el revisor y el cajero de demostración."
-      );
     } finally {
       window.clearTimeout(timer);
       setLoading(false);
@@ -124,7 +116,7 @@ export default function UsersPage() {
   );
 
   const adminCount = useMemo(
-    () => users.filter((user) => user.role === "Administrador").length,
+    () => users.filter((user) => isAdmin(user.role)).length,
     [users]
   );
 
@@ -239,7 +231,7 @@ export default function UsersPage() {
           <p className="mt-2 text-3xl font-bold text-emerald-400">{activeCount}</p>
         </div>
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-          <p className="text-sm text-slate-400">Administradores</p>
+          <p className="text-sm text-slate-400">Gerentes</p>
           <p className="mt-2 text-3xl font-bold text-sky-400">{adminCount}</p>
         </div>
       </section>
@@ -316,7 +308,11 @@ export default function UsersPage() {
                           className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-sky-500 disabled:opacity-50"
                         >
                           <option value="Administrador">Administrador</option>
-                          <option value="Cajero">Cajero</option>
+                          {STAFF_ROLES.map((role) => (
+                            <option key={role} value={role}>
+                              {role}
+                            </option>
+                          ))}
                         </select>
                       </td>
                       <td className="p-3">

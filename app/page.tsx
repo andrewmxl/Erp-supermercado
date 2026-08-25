@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
-import { isAdmin, money } from "@/lib/erp";
+import { canSeeFinance, canSeeMailbox, canManageUsers, canUsePOS, isClient, money } from "@/lib/erp";
 import { STORE_HERO_IMAGE, STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
 import { createClient } from "@/utils/supabase/client";
 
@@ -82,50 +82,55 @@ export default function DashboardPage() {
   const modules = [
     {
       href: "/pos",
-      title: "Punto de venta",
-      text: "Cobrar piezas y kilos, calcular cambio y descontar inventario.",
+      title: isClient(profile.role) ? "Comprar" : "Punto de venta",
+      text: isClient(profile.role)
+        ? "Arma tu pedido, paga y recibe cupón o regalo si aplica."
+        : "Cobrar piezas y kilos, calcular cambio y descontar inventario.",
+      show: canUsePOS(profile.role),
     },
     {
       href: "/inventory",
       title: "Inventario",
       text: "Alta, edición, códigos de barras, stock mínimo e imágenes.",
+      show: !isClient(profile.role),
     },
     {
       href: "/finance",
       title: "Finanzas",
       text: "Ventas del día, semana y mes, ticket promedio y utilidad.",
+      show: canSeeFinance(profile.role),
     },
     {
       href: "/assistant",
       title: "WhatsApp",
-      text: "El cliente pregunta y el agente responde. Conecta tu número para entrar como administrador.",
+      text: "Cliente pregunta precios. El personal entra con su puesto, no solo con un número.",
+      show: true,
     },
     {
       href: "/contact",
       title: "Contacto",
       text: "Quejas, sugerencias o comentarios para el propietario del negocio.",
+      show: true,
     },
-  ];
-
-  if (isAdmin(profile.role)) {
-    modules.push(
-      {
-        href: "/finance/expenses",
-        title: "Gastos",
-        text: "Registrar egresos para calcular utilidad del mes.",
-      },
-      {
-        href: "/users",
-        title: "Usuarios",
-        text: "Roles de Administrador y Cajero, con permisos distintos.",
-      },
-      {
-        href: "/feedback",
-        title: "Buzón",
-        text: "Mensajes de clientes y calificaciones de la compra.",
-      }
-    );
-  }
+    {
+      href: "/finance/expenses",
+      title: "Gastos",
+      text: "Registrar egresos para calcular utilidad del mes.",
+      show: canSeeFinance(profile.role),
+    },
+    {
+      href: "/users",
+      title: "Usuarios",
+      text: "Alta de personal: gerente, supervisor, cajero y técnico.",
+      show: canManageUsers(profile.role),
+    },
+    {
+      href: "/feedback",
+      title: "Buzón",
+      text: "Mensajes de clientes y calificaciones de la compra.",
+      show: canSeeMailbox(profile.role),
+    },
+  ].filter((item) => item.show);
 
   return (
     <main className="min-h-screen bg-slate-950 p-6 text-slate-100">

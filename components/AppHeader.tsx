@@ -3,38 +3,21 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { isAdmin, isCashier, type ErpProfile } from "@/lib/erp";
+import { DEMO_ROLE_KEY, navLinksForRole, type ErpProfile } from "@/lib/erp";
 import { STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
-
-const LINKS = [
-  { href: "/", label: "Panel" },
-  { href: "/pos", label: "Punto de venta" },
-  { href: "/inventory", label: "Inventario" },
-  { href: "/finance", label: "Finanzas" },
-  { href: "/finance/expenses", label: "Gastos" },
-  { href: "/assistant", label: "WhatsApp" },
-  { href: "/contact", label: "Contacto" },
-];
 
 export function AppHeader({ profile }: { profile: ErpProfile }) {
   const pathname = usePathname();
   const router = useRouter();
-  const admin = isAdmin(profile.role);
+  const links = navLinksForRole(profile.role);
 
   async function signOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    window.localStorage.removeItem(DEMO_ROLE_KEY);
     router.replace("/login");
     router.refresh();
   }
-
-  const links = admin
-    ? [...LINKS, { href: "/users", label: "Usuarios" }, { href: "/feedback", label: "Buzón" }]
-    : isCashier(profile.role)
-      ? LINKS.filter((link) =>
-          ["/", "/pos", "/inventory", "/assistant", "/contact"].includes(link.href)
-        )
-      : LINKS.filter((link) => link.href !== "/finance/expenses");
 
   return (
     <header className="mb-6 flex flex-col gap-4 border-b border-emerald-900/80 pb-5">
@@ -87,7 +70,7 @@ export function AppHeader({ profile }: { profile: ErpProfile }) {
 
 export function SessionScreen({ message }: { message: string }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">
+    <main className="flex min-h-screen items-center justify-center bg-[#121a16] text-slate-100">
       <p className="text-slate-400">{message}</p>
     </main>
   );

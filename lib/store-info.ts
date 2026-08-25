@@ -1,7 +1,7 @@
-export const STORE_NAME = "Mercado La Estrella";
-export const STORE_TAGLINE = "Abarrotes, fresco y despensa · Mexicali";
+export const STORE_NAME = "Supermercado Cachanilla";
+export const STORE_TAGLINE = "Abarrotes, fresco y despensa · Mexicali, B.C.";
 export const STORE_HERO_IMAGE =
-  "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=1600&q=80";
+  "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1600&q=80";
 
 export const CHARITY_NAME = "Comedor Comunitario Mexicali";
 
@@ -46,7 +46,7 @@ export type ShippingId = (typeof SHIPPING_OPTIONS)[number]["id"];
 export const TRANSFER_INFO = {
   bank: "BBVA",
   clabe: "012 760 001234567890",
-  beneficiary: "ERP Supermercado S.A. de C.V.",
+  beneficiary: "Supermercado Cachanilla S.A. de C.V.",
   concept: "Venta caja 1",
 };
 

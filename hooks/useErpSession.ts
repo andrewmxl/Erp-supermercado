@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { CASHIER_REVIEW_PROFILE, DEMO_ROLE_KEY, REVIEW_PROFILE, type ErpProfile } from "@/lib/erp";
+import {
+  canManageUsers,
+  DEMO_ROLE_KEY,
+  profileForDemoRole,
+  type ErpProfile,
+} from "@/lib/erp";
 
 export function useErpSession(options?: { adminOnly?: boolean }) {
   const [checking, setChecking] = useState(true);
@@ -30,7 +35,7 @@ export function useErpSession(options?: { adminOnly?: boolean }) {
             .maybeSingle();
 
           if (!error && data?.active) {
-            if (options?.adminOnly && data.role !== "Administrador") {
+            if (options?.adminOnly && !canManageUsers(data.role)) {
               if (!cancelled) {
                 setProfile({
                   id: data.id,
@@ -66,9 +71,7 @@ export function useErpSession(options?: { adminOnly?: boolean }) {
           typeof window !== "undefined"
             ? window.localStorage.getItem(DEMO_ROLE_KEY)
             : null;
-        setProfile(
-          demoRole === "Cajero" ? CASHIER_REVIEW_PROFILE : REVIEW_PROFILE
-        );
+        setProfile(profileForDemoRole(demoRole));
         setChecking(false);
       }
     }

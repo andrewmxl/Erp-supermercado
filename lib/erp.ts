@@ -1,4 +1,11 @@
-export type ErpRole = "Administrador" | "Cajero" | string;
+export type ErpRole =
+  | "Gerente"
+  | "Administrador"
+  | "Supervisor"
+  | "Cajero"
+  | "Tecnico"
+  | "Cliente"
+  | string;
 
 export type ErpProfile = {
   id: string;
@@ -8,12 +15,18 @@ export type ErpProfile = {
   active: boolean;
 };
 
-/** Cajero de demostración (mismo UUID que ya usaba el POS). */
+export const STAFF_ROLES = [
+  "Gerente",
+  "Supervisor",
+  "Cajero",
+  "Tecnico",
+] as const;
+
 export const REVIEW_PROFILE: ErpProfile = {
   id: "9db03eb5-ae73-40e0-ad57-f073a63b537b",
   name: "Revisor Da Vinci",
   email: "revisor@erp-supermercado.demo",
-  role: "Administrador",
+  role: "Gerente",
   active: true,
 };
 
@@ -42,12 +55,49 @@ export function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+/** Dueño / gerente: finanzas, usuarios, alta de productos, buzón. */
 export function isAdmin(role: string | undefined) {
-  return role === "Administrador";
+  return role === "Administrador" || role === "Gerente";
 }
 
 export function isCashier(role: string | undefined) {
   return role === "Cajero";
+}
+
+export function isClient(role: string | undefined) {
+  return role === "Cliente";
+}
+
+export function isStaff(role: string | undefined) {
+  return Boolean(role) && role !== "Cliente";
+}
+
+export function canSeeFinance(role: string | undefined) {
+  return isAdmin(role);
+}
+
+export function canManageUsers(role: string | undefined) {
+  return isAdmin(role);
+}
+
+export function canSeeMailbox(role: string | undefined) {
+  return isAdmin(role) || role === "Supervisor";
+}
+
+export function canEditInventory(role: string | undefined) {
+  return isAdmin(role) || role === "Supervisor";
+}
+
+export function canViewInventory(role: string | undefined) {
+  return isStaff(role);
+}
+
+export function canUsePOS(role: string | undefined) {
+  return isAdmin(role) || role === "Supervisor" || role === "Cajero" || role === "Cliente";
+}
+
+export function canAskBusinessData(role: string | undefined) {
+  return isAdmin(role) || role === "Supervisor";
 }
 
 export const CASHIER_REVIEW_PROFILE: ErpProfile = {
@@ -58,4 +108,59 @@ export const CASHIER_REVIEW_PROFILE: ErpProfile = {
   role: "Cajero",
 };
 
+export const SUPERVISOR_REVIEW_PROFILE: ErpProfile = {
+  ...REVIEW_PROFILE,
+  id: "b2d4f6a8-1111-4c22-8e33-445566778899",
+  name: "Supervisor de piso",
+  email: "supervisor@erp-supermercado.demo",
+  role: "Supervisor",
+};
+
+export const TECH_REVIEW_PROFILE: ErpProfile = {
+  ...REVIEW_PROFILE,
+  id: "d3e5f7a9-2222-4d33-9f44-556677889900",
+  name: "Técnico de sistemas",
+  email: "tecnico@erp-supermercado.demo",
+  role: "Tecnico",
+};
+
+export const CLIENT_REVIEW_PROFILE: ErpProfile = {
+  ...REVIEW_PROFILE,
+  id: "e4f608b0-3333-4e44-a055-667788990011",
+  name: "Cliente Cachanilla",
+  email: "cliente@erp-supermercado.demo",
+  role: "Cliente",
+};
+
 export const DEMO_ROLE_KEY = "erp_demo_role";
+
+export function profileForDemoRole(role: string | null): ErpProfile {
+  switch (role) {
+    case "Cajero":
+      return CASHIER_REVIEW_PROFILE;
+    case "Supervisor":
+      return SUPERVISOR_REVIEW_PROFILE;
+    case "Tecnico":
+      return TECH_REVIEW_PROFILE;
+    case "Cliente":
+      return CLIENT_REVIEW_PROFILE;
+    default:
+      return REVIEW_PROFILE;
+  }
+}
+
+export function navLinksForRole(role: string | undefined) {
+  const all = [
+    { href: "/", label: "Panel", show: true },
+    { href: "/pos", label: isClient(role) ? "Comprar" : "Punto de venta", show: canUsePOS(role) },
+    { href: "/inventory", label: "Inventario", show: canViewInventory(role) },
+    { href: "/finance", label: "Finanzas", show: canSeeFinance(role) },
+    { href: "/finance/expenses", label: "Gastos", show: canSeeFinance(role) },
+    { href: "/assistant", label: "WhatsApp", show: true },
+    { href: "/contact", label: "Contacto", show: true },
+    { href: "/users", label: "Usuarios", show: canManageUsers(role) },
+    { href: "/feedback", label: "Buzón", show: canSeeMailbox(role) },
+  ];
+
+  return all.filter((link) => link.show).map(({ href, label }) => ({ href, label }));
+}

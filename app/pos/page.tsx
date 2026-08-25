@@ -13,6 +13,7 @@ import {
   type PaymentMethod,
   type ShippingId,
 } from "@/lib/store-info";
+import { canUsePOS } from "@/lib/erp";
 import { createClient } from "@/utils/supabase/client";
 
 type Product = {
@@ -84,33 +85,54 @@ export default function PosPage() {
     setLoading(true);
     setErrorMessage("");
 
-    const supabase = createClient();
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 10000);
 
-    const { data, error } = await supabase
-      .from("Product")
-      .select("id, name, sku, sellPrice, stock, unit, barcode, imageUrl, category")
-      .order("name");
+    try {
+      const response = await fetch("/api/products", {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      const payload = (await response.json()) as {
+        products?: Array<{
+          id: string;
+          name: string;
+          sku: string;
+          sellPrice?: number;
+          stock: number;
+          unit: string;
+          barcode?: string;
+          imageUrl?: string;
+          category?: string;
+        }>;
+      };
 
-    if (error) {
-      setErrorMessage(error.message);
+      if (!response.ok) {
+        throw new Error("No se pudo leer el inventario.");
+      }
+
+      const realProducts: Product[] = (payload.products ?? []).map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        price: Number(product.sellPrice),
+        stock: Number(product.stock),
+        unit: product.unit === "KG" ? "KG" : "PIECE",
+        barcode: product.barcode ?? "",
+        imageUrl: product.imageUrl ?? "",
+        category: product.category ?? "",
+      }));
+
+      setProducts(realProducts);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo cargar la caja."
+      );
+      setProducts([]);
+    } finally {
+      window.clearTimeout(timer);
       setLoading(false);
-      return;
     }
-
-    const realProducts: Product[] = (data ?? []).map((product) => ({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      price: Number(product.sellPrice),
-      stock: Number(product.stock),
-      unit: product.unit === "KG" ? "KG" : "PIECE",
-      barcode: product.barcode ?? "",
-      imageUrl: product.imageUrl ?? "",
-      category: product.category ?? "",
-    }));
-
-    setProducts(realProducts);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -623,6 +645,14 @@ export default function PosPage() {
       ticketParts.push("Terminal: pago aprobado");
     }
 
+    if (grandTotal >= 10000) {
+      ticketParts.push(
+        "Regalo por compra mayor a $10,000: despensa de $250 o 15% en la siguiente visita (cupón CACHA15)"
+      );
+    } else {
+      ticketParts.push("Cupón CACHA10: 10% de descuento en tu próxima compra (30 días)");
+    }
+
     setSuccessMessage(
       `Venta cobrada. Subtotal $${subtotal.toFixed(2)} · Total $${grandTotal.toFixed(2)}. ${ticketParts.join(" · ")}`
     );
@@ -649,6 +679,12 @@ export default function PosPage() {
     return <SessionScreen message="Verificando sesión..." />;
   }
 
+  if (!canUsePOS(profile.role)) {
+    return (
+      <SessionScreen message="Este perfil no cobra en caja. Entra como cajero, supervisor, gerente o cliente." />
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
       <div className="mx-auto max-w-7xl">
@@ -669,7 +705,10 @@ export default function PosPage() {
       {askRating && (
         <div className="mb-5 rounded-xl border border-amber-800 bg-slate-900 p-5">
           <p className="font-semibold text-amber-200">
-            ¿Cómo calificarías la atención de esta compra? (opcional)
+            ¿Cómo te fue en esta compra? (opcional)
+          </p>
+          <p className="mt-1 text-sm text-slate-400">
+            Califica el ticket o al personal de caja. También puedes omitir.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {[1, 2, 3, 4, 5].map((stars) => (

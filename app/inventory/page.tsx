@@ -6,7 +6,7 @@ import { BarcodeMark } from "@/components/BarcodeMark";
 import { ProductShot } from "@/components/ProductShot";
 import { useErpSession } from "@/hooks/useErpSession";
 import { barcodeFromSku } from "@/lib/barcode";
-import { isAdmin } from "@/lib/erp";
+import { canEditInventory, canViewInventory } from "@/lib/erp";
 import { photoForProduct } from "@/lib/product-media";
 import { createClient } from "@/utils/supabase/client";
 
@@ -486,7 +486,11 @@ export default function InventoryPage() {
     return <SessionScreen message="Verificando sesión..." />;
   }
 
-  const canEdit = isAdmin(profile.role);
+  const canEdit = canEditInventory(profile.role);
+
+  if (!canViewInventory(profile.role)) {
+    return <SessionScreen message="El inventario es solo para personal de tienda." />;
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
@@ -526,7 +530,7 @@ export default function InventoryPage() {
             <p className="mt-1 text-sm text-slate-400">
               {loading
                 ? "Cargando…"
-                : `${filteredProducts.length} productos mostrados`}
+                : `${filteredProducts.length} productos mostrados. Para borrar uno: Eliminar en la fila (derecha) o Editar y luego Eliminar este producto.`}
             </p>
           </div>
 
@@ -742,6 +746,7 @@ export default function InventoryPage() {
           </div>
 
           {editingId && (
+            <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={resetForm}
@@ -750,6 +755,18 @@ export default function InventoryPage() {
             >
               Cancelar edición
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                const current = products.find((item) => item.id === editingId);
+                if (current) void deleteProduct(current);
+              }}
+              disabled={saving}
+              className="rounded-lg bg-red-900 px-4 py-2 font-semibold text-red-100 hover:bg-red-800 disabled:opacity-40"
+            >
+              Eliminar este producto
+            </button>
+            </div>
           )}
         </div>
         <button

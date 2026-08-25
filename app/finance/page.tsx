@@ -103,7 +103,7 @@ export default function FinancePage() {
   }
 
   if (!isAdmin(profile.role)) {
-    return <SessionScreen message="Solo el administrador puede ver finanzas." />;
+    return <SessionScreen message="Solo el gerente puede ver finanzas." />;
   }
 
   return (

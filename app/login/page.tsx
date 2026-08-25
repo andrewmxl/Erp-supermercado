@@ -187,30 +187,44 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6 space-y-3 border-t border-slate-800 pt-5 text-sm text-slate-400">
+          <p className="font-medium text-amber-100/90">Entrar al supermercado</p>
           <p>
-            Revisión: elige con qué perfil quieres entrar. El cajero cobra y consulta inventario.
-            El administrador ve finanzas, da de alta usuarios y productos.
+            Elige si eres cliente o personal. El personal usa el puesto para ver solo lo que le toca.
           </p>
           <button
             type="button"
             onClick={() => {
-              window.localStorage.setItem(DEMO_ROLE_KEY, "Administrador");
+              window.localStorage.setItem(DEMO_ROLE_KEY, "Cliente");
               router.replace("/");
             }}
-            className="w-full rounded-lg bg-emerald-700 p-3 font-semibold text-white hover:bg-emerald-600"
+            className="w-full rounded-lg bg-amber-700 p-3 font-semibold text-white hover:bg-amber-600"
           >
-            Entrar como Administrador
+            Soy cliente
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              window.localStorage.setItem(DEMO_ROLE_KEY, "Cajero");
-              router.replace("/");
-            }}
-            className="w-full rounded-lg bg-sky-800 p-3 font-semibold text-white hover:bg-sky-700"
-          >
-            Entrar como Cajero
-          </button>
+          <p className="pt-2 text-slate-500">Personal de tienda</p>
+          {(
+            [
+              ["Gerente", "Finanzas, usuarios, inventario, buzón"],
+              ["Supervisor", "Inventario, caja y buzón"],
+              ["Cajero", "Cobrar y consultar existencias"],
+              ["Tecnico", "WhatsApp e inventario (sin caja ni finanzas)"],
+            ] as const
+          ).map(([role, detail]) => (
+            <button
+              key={role}
+              type="button"
+              onClick={() => {
+                window.localStorage.setItem(DEMO_ROLE_KEY, role);
+                router.replace("/");
+              }}
+              className="w-full rounded-lg bg-emerald-800 p-3 text-left font-semibold text-white hover:bg-emerald-700"
+            >
+              {role}
+              <span className="mt-1 block text-xs font-normal text-emerald-100/80">
+                {detail}
+              </span>
+            </button>
+          ))}
         </div>
         </div>
       </div>
