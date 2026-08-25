@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   try {
     const response = await fetch(remote, {
       headers: {
-        Accept: "image/avif,image/webp,image/jpeg,image/*,*/*;q=0.8",
+        Accept: "image/jpeg"
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       },

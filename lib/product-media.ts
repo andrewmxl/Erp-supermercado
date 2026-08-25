@@ -419,7 +419,12 @@ export function remotePhotoUrl(name: string, category = "", sku = "") {
 }
 
 export function photoForProduct(name: string, category = "", sku = "") {
-  return remotePhotoUrl(name, category, sku);
+  const params = new URLSearchParams({
+    name: name || "Producto",
+    category,
+    sku,
+  });
+  return `/api/catalog-photo?${params.toString()}`;
 }
 
 export function productIcon(name: string, sku = "", category = "") {
@@ -531,7 +536,9 @@ export function displayPhoto(
   if (
     url &&
     !isBrokenCatalogUrl(url) &&
-    (url.startsWith("https://images.unsplash.com/") || /^https?:\/\//.test(url))
+    (url.startsWith("/api/catalog-photo") ||
+      url.includes("unsplash.com/") ||
+      /^https?:\/\//.test(url))
   ) {
     return url;
   }

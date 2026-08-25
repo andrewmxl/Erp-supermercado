@@ -22,11 +22,7 @@ export function ProductShot({
   const height = compact ? 108 : 200;
   const label = name || "Producto";
   const photo = displayPhoto(label, category, imageUrl, sku);
-  const fallback = `/api/catalog-photo?${new URLSearchParams({
-    name: label,
-    category,
-    sku,
-  }).toString()}`;
+  const placeholder = uniquePhoto(label, sku);
   const [src, setSrc] = useState(photo);
 
   useEffect(() => {
@@ -41,17 +37,10 @@ export function ProductShot({
           alt=""
           width={boxWidth}
           height={height}
-          referrerPolicy="no-referrer"
           className="rounded-md object-cover"
           style={{ width: boxWidth, height, minWidth: boxWidth, minHeight: height }}
           onError={() => {
-            if (src !== fallback && src !== uniquePhoto(label, sku)) {
-              setSrc(fallback);
-              return;
-            }
-            if (src !== uniquePhoto(label, sku)) {
-              setSrc(uniquePhoto(label, sku));
-            }
+            if (src !== placeholder) setSrc(placeholder);
           }}
         />
       </div>
