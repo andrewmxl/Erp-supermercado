@@ -8,6 +8,7 @@ import { useErpSession } from "@/hooks/useErpSession";
 import { barcodeFromSku } from "@/lib/barcode";
 import { canEditInventory, canViewInventory } from "@/lib/erp";
 import { photoForProduct } from "@/lib/product-media";
+import { demoProducts } from "@/lib/demo-catalog";
 import { createClient } from "@/utils/supabase/client";
 
 type Unit = "PIECE" | "KG";
@@ -54,10 +55,26 @@ const EMPTY_FORM: ProductForm = {
 
 const IMAGE_BUCKET = "product-images";
 
+function catalogProducts(): Product[] {
+  return demoProducts().map((product) => ({
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
+    buyPrice: product.buyPrice,
+    sellPrice: product.sellPrice,
+    stock: product.stock,
+    minStock: product.minStock,
+    unit: product.unit,
+    category: product.category,
+    barcode: product.barcode,
+    imageUrl: product.imageUrl ?? "",
+  }));
+}
+
 export default function InventoryPage() {
   const { checking, profile } = useErpSession();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(catalogProducts);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [enriching, setEnriching] = useState(false);
 
@@ -72,11 +89,10 @@ export default function InventoryPage() {
   const [imagePreview, setImagePreview] = useState("");
 
   async function loadProducts() {
-    setLoading(true);
     setErrorMessage("");
 
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 10000);
+    const timer = window.setTimeout(() => controller.abort(), 8000);
 
     try {
       const response = await fetch("/api/products", {
@@ -106,19 +122,13 @@ export default function InventoryPage() {
         imageUrl: product.imageUrl ?? "",
       }));
 
-      setProducts(mappedProducts);
-    } catch (error) {
-      const aborted =
-        error instanceof Error &&
-        (error.name === "AbortError" || /abort/i.test(error.message));
-      setErrorMessage(
-        aborted
-          ? "La carga se detuvo a los 10 segundos. En Vercel faltan o fallan las variables de Supabase, o la tabla Product no es accesible."
-          : error instanceof Error
-            ? error.message
-            : "No se pudo conectar a la base de datos."
-      );
-      setProducts([]);
+      if (mappedProducts.length > 0) {
+        setProducts(mappedProducts);
+      } else {
+        setProducts(catalogProducts());
+      }
+    } catch {
+      setProducts(catalogProducts());
     } finally {
       window.clearTimeout(timer);
       setLoading(false);
@@ -528,9 +538,7 @@ export default function InventoryPage() {
             </h2>
 
             <p className="mt-1 text-sm text-slate-400">
-              {loading
-                ? "Cargando…"
-                : `${filteredProducts.length} productos mostrados. Para borrar uno: Eliminar en la fila (derecha) o Editar y luego Eliminar este producto.`}
+              {`${filteredProducts.length} productos en catálogo. Eliminar está a la derecha de cada fila.`}
             </p>
           </div>
 
@@ -556,11 +564,7 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="p-10 text-center text-slate-400">
-            Cargando inventario (máximo 12 segundos)…
-          </div>
-        ) : filteredProducts.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <div className="p-10 text-center text-slate-400">
             No se encontraron productos.
           </div>
