@@ -1,84 +1,70 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
-import { canSeeFinance, canSeeMailbox, canManageUsers, canUsePOS, isClient, money } from "@/lib/erp";
+import { canSeeFinance, canSeeMailbox, canManageUsers, canUsePOS, isAdmin, isClient, money } from "@/lib/erp";
+import { adminCatalogStats } from "@/lib/dashboard-stats";
 import { STORE_HERO_IMAGE, STORE_NAME, STORE_TAGLINE } from "@/lib/store-info";
 
-type Product = {
-  stock: number;
-  minStock: number;
-};
-
-type Sale = {
-  totalAmount: number;
-  createdAt: string;
-};
+const CATALOG = adminCatalogStats();
 
 export default function DashboardPage() {
   const { checking, profile } = useErpSession();
-  const [productCount, setProductCount] = useState(0);
-  const [lowStockCount, setLowStockCount] = useState(0);
-  const [sales, setSales] = useState<Sale[]>([]);
+  const [productCount, setProductCount] = useState(CATALOG.productCount);
+  const [lowStockCount, setLowStockCount] = useState(CATALOG.lowStockCount);
+  const [todayRevenue, setTodayRevenue] = useState(CATALOG.todayRevenue);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (checking || !profile) return;
 
     async function load() {
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 10000);
-
       try {
-        const response = await fetch("/api/products", {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        const payload = (await response.json()) as {
-          products?: Array<{ stock?: number; minStock?: number }>;
-        };
-        const mapped = (payload.products ?? []) as Product[];
-        setProductCount(mapped.length);
-        setLowStockCount(
-          mapped.filter(
-            (product) => Number(product.stock) <= Number(product.minStock)
-          ).length
-        );
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error ? error.message : "No se pudo leer el inventario."
-        );
-      } finally {
-        window.clearTimeout(timer);
+        const response = await fetch("/api/dashboard", { cache: "no-store" });
+        if (response.ok) {
+          const payload = (await response.json()) as {
+            productCount?: number;
+            lowStockCount?: number;
+            todayRevenue?: number;
+          };
+          setProductCount(payload.productCount ?? CATALOG.productCount);
+          setLowStockCount(payload.lowStockCount ?? CATALOG.lowStockCount);
+          setTodayRevenue(payload.todayRevenue ?? CATALOG.todayRevenue);
+        }
+      } catch {
+        setProductCount(CATALOG.productCount);
+        setLowStockCount(CATALOG.lowStockCount);
+        setTodayRevenue(CATALOG.todayRevenue);
       }
 
       try {
         const raw = window.localStorage.getItem("erp_pos_sales");
-        const localSales = raw ? (JSON.parse(raw) as Sale[]) : [];
-        setSales(localSales);
+        const localSales = raw
+          ? (JSON.parse(raw) as Array<{ totalAmount: number; createdAt: string }>)
+          : [];
+        const now = new Date();
+        const extra = localSales
+          .filter((sale) => {
+            const date = new Date(sale.createdAt);
+            return (
+              date.getFullYear() === now.getFullYear() &&
+              date.getMonth() === now.getMonth() &&
+              date.getDate() === now.getDate()
+            );
+          })
+          .reduce((sum, sale) => sum + Number(sale.totalAmount ?? 0), 0);
+        if (extra > 0) {
+          setTodayRevenue((current) => current + extra);
+        }
       } catch {
-        setSales([]);
+        setErrorMessage("");
       }
     }
 
     load();
   }, [checking, profile]);
-
-  const todayRevenue = useMemo(() => {
-    const now = new Date();
-    return sales
-      .filter((sale) => {
-        const date = new Date(sale.createdAt);
-        return (
-          date.getFullYear() === now.getFullYear() &&
-          date.getMonth() === now.getMonth() &&
-          date.getDate() === now.getDate()
-        );
-      })
-      .reduce((sum, sale) => sum + sale.totalAmount, 0);
-  }, [sales]);
 
   if (checking || !profile) {
     return <SessionScreen message="Verificando sesión..." />;
@@ -166,6 +152,7 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {isAdmin(profile.role) && (
         <section className="mt-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
             <p className="text-sm text-slate-400">Ventas de hoy</p>
@@ -182,6 +169,7 @@ export default function DashboardPage() {
             </p>
           </div>
         </section>
+        )}
 
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           {modules.map((item) => (
