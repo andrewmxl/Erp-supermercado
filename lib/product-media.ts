@@ -95,7 +95,7 @@ function fold(value: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function hueFrom(value: string) {
+export function hueFrom(value: string) {
   let hash = 0;
   for (const char of value) {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
