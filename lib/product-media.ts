@@ -103,12 +103,19 @@ function hueFrom(value: string) {
   return hash % 360;
 }
 
+export function productSwatch(name: string, sku = "") {
+  const hue = hueFrom(`${sku}|${name}`);
+  const hue2 = (hue + 42) % 360;
+  return {
+    background: `linear-gradient(145deg, hsl(${hue},52%,32%), hsl(${hue2},40%,14%))`,
+  };
+}
+
 export function uniquePhoto(name: string, sku = "") {
   const hue = hueFrom(`${sku}|${name}`);
-  const hue2 = (hue + 48) % 360;
   const label = name.replace(/[<>&]/g, "").slice(0, 32);
   const skuLabel = (sku || "CATALOGO").replace(/[<>&]/g, "");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="700" height="480" viewBox="0 0 700 480"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="hsl(${hue},48%,24%)"/><stop offset="100%" stop-color="hsl(${hue2},42%,12%)"/></linearGradient></defs><rect width="700" height="480" fill="url(#g)"/><text x="350" y="210" text-anchor="middle" fill="#f4efe6" font-size="30" font-family="Arial" font-weight="700">${label}</text><text x="350" y="255" text-anchor="middle" fill="#d4c4a8" font-size="18" font-family="Arial">${skuLabel}</text></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="700" height="480"><rect width="700" height="480" fill="hsl(${hue},48%,22%)"/><text x="350" y="220" text-anchor="middle" fill="#f4efe6" font-size="28" font-family="Arial" font-weight="700">${label}</text><text x="350" y="265" text-anchor="middle" fill="#d4c4a8" font-size="16" font-family="Arial">${skuLabel}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
