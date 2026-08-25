@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { AppHeader, SessionScreen } from "@/components/AppHeader";
 import { useErpSession } from "@/hooks/useErpSession";
 import { canAskBusinessData, isClient, normalizeRole, STAFF_ROLES } from "@/lib/erp";
@@ -25,9 +25,9 @@ export default function AssistantPage() {
   const { checking, profile } = useErpSession();
   const [visitorKind, setVisitorKind] = useState<"cliente" | "personal" | "">("");
   const [staffRole, setStaffRole] = useState<(typeof STAFF_ROLES)[number]>("Cajero");
-  const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -53,11 +53,16 @@ export default function AssistantPage() {
     setStaffRole(staff);
   }, [profile]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 200);
+    return () => window.clearTimeout(timer);
+  }, [profile?.id]);
+
   async function sendMessage() {
-    const finalQuestion = input.trim();
+    const finalQuestion = inputRef.current?.value.trim() ?? "";
     if (!finalQuestion || sending) return;
 
-    setInput("");
+    if (inputRef.current) inputRef.current.value = "";
     setErrorMessage("");
     setSending(true);
     setMessages((current) => [
@@ -118,7 +123,7 @@ export default function AssistantPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
+    <main className="min-h-screen bg-slate-950 p-6 pb-40 text-slate-100">
       <div className="mx-auto max-w-3xl">
         <AppHeader profile={profile} />
         <h1 className="text-3xl font-bold text-emerald-400">WhatsApp</h1>
@@ -158,7 +163,7 @@ export default function AssistantPage() {
           </div>
         )}
 
-        <div className="mt-6 overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900">
           <div className="border-b border-slate-800 bg-emerald-950/40 px-4 py-3">
             <p className="font-semibold text-emerald-300">Chat del supermercado</p>
             <p className="text-xs text-slate-400">
@@ -170,7 +175,7 @@ export default function AssistantPage() {
             </p>
           </div>
 
-          <div className="h-[480px] space-y-4 overflow-y-auto p-5">
+          <div className="h-[420px] space-y-4 overflow-y-auto p-5">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -189,36 +194,40 @@ export default function AssistantPage() {
               <p className="text-sm text-slate-500">Respondiendo...</p>
             )}
           </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="relative z-20 flex gap-3 border-t border-slate-800 bg-slate-900 p-4"
-          >
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void sendMessage();
-                }
-              }}
-              placeholder="Escribe tu pregunta... Ejemplo: ¿cuánto cuesta la leche?"
-              rows={3}
-              autoComplete="off"
-              autoFocus
-              className="relative z-20 min-h-[72px] flex-1 resize-y rounded-xl border border-slate-500 bg-slate-950 px-4 py-3 text-base text-white outline-none focus:border-emerald-400"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || sending}
-              className="self-end rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white disabled:opacity-40"
-            >
-              Enviar
-            </button>
-          </form>
         </div>
       </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="fixed bottom-0 left-0 right-0 z-[200] border-t-2 border-emerald-500 bg-slate-900 p-4"
+      >
+        <div className="mx-auto flex max-w-3xl gap-3">
+          <label className="sr-only" htmlFor="whatsapp-input">
+            Escribe tu pregunta
+          </label>
+          <input
+            id="whatsapp-input"
+            ref={inputRef}
+            type="text"
+            name="mensaje"
+            enterKeyHint="send"
+            autoComplete="off"
+            autoCorrect="on"
+            spellCheck
+            disabled={false}
+            readOnly={false}
+            placeholder="Toca aquí y escribe, por ejemplo: precio de la leche"
+            className="h-14 flex-1 rounded-xl border-2 border-emerald-400 bg-white px-4 text-lg text-black outline-none focus:border-amber-400"
+          />
+          <button
+            type="submit"
+            disabled={sending}
+            className="rounded-xl bg-emerald-600 px-6 font-bold text-white disabled:opacity-40"
+          >
+            Enviar
+          </button>
+        </div>
+      </form>
     </main>
   );
 }
